@@ -1,7 +1,11 @@
 import { useRef, useState, type DragEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { APP_NAME, DEFAULT_DAILY_GOAL } from "../config";
+import Heatmap from "../components/Heatmap";
+import { StreakPill, StreakStatus, useStreak } from "../components/StreakPill";
+import { APP_NAME } from "../config";
 import { useDeck } from "../deck/DeckContext";
+import { GOALS, type Goal } from "../lib/activity";
+import { setDailyGoal } from "../lib/activityStorage";
 import { checkFileBasics, PROBLEM_MESSAGES } from "../lib/limits";
 import { loadDeck, loadRecent } from "../lib/storage";
 
@@ -12,6 +16,9 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const recent = loadRecent();
+  const { activity, progress } = useStreak();
+  const goal = activity.goal;
+  const cardsToday = progress.cards;
 
   function tryTheSampleDeck() {
     openSampleDeck();
@@ -46,32 +53,42 @@ export default function Home() {
     handleFile(e.dataTransfer.files[0]);
   }
 
-  // Static placeholders until the daily log exists (B5).
-  const cardsToday = 0;
-
   return (
     <main id="main" className="screen">
       <header className="topbar">
         <span className="brand">{APP_NAME}</span>
-        <span className="pill" aria-label="Current streak: 0 days">
-          0-day streak
-        </span>
+        <StreakPill />
       </header>
 
       <section className="card-box stack" aria-labelledby="goal-heading">
         <p id="goal-heading">
-          Today: <strong>{cardsToday} / {DEFAULT_DAILY_GOAL}</strong> cards
+          Today: <strong>{cardsToday} / {goal}</strong> cards
         </p>
         <div
           className="meter"
           role="progressbar"
           aria-label="Daily goal progress"
           aria-valuemin={0}
-          aria-valuemax={DEFAULT_DAILY_GOAL}
-          aria-valuenow={cardsToday}
+          aria-valuemax={goal}
+          aria-valuenow={Math.min(cardsToday, goal)}
         >
-          <span style={{ width: `${(cardsToday / DEFAULT_DAILY_GOAL) * 100}%` }} />
+          <span style={{ width: `${Math.min(100, (cardsToday / goal) * 100)}%` }} />
         </div>
+        <StreakStatus />
+        <label className="field-label">
+          Daily goal
+          <select className="field" value={goal} onChange={(e) => setDailyGoal(Number(e.target.value) as Goal)}>
+            {GOALS.map((g) => (
+              <option key={g} value={g}>
+                {g} cards a day
+              </option>
+            ))}
+          </select>
+        </label>
+        <details className="heat-details">
+          <summary>Your last 5 weeks</summary>
+          <Heatmap heading={false} />
+        </details>
       </section>
 
       <section

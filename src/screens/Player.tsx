@@ -13,6 +13,7 @@ import {
   type CaptionSize,
   type PlayerSettings,
 } from "../lib/playerStorage";
+import { recordCardCompleted } from "../lib/activityStorage";
 import { loadEnglishVoices, narrate, sleep, speechSupported, splitSentences, stopSpeaking } from "../lib/speech";
 import type { Card, Deck } from "../types/deck";
 
@@ -135,6 +136,7 @@ function PlayerScreen({ deck }: { deck: Deck }) {
       if (token.cancelled) return;
       await sleep(900);
       if (token.cancelled) return;
+      recordCardCompleted(); // listened all the way through: counts as a card studied
       if (run.advance) setState((s) => P.gotIt(s));
       else setRun(null);
     })();
@@ -165,9 +167,17 @@ function PlayerScreen({ deck }: { deck: Deck }) {
     setState((s) => P.previous(s));
   }, [stopSingle]);
 
+  // "Again" and "Got it" are the two ways to finish a card by hand, and both count as a card studied.
   const markAgain = useCallback(() => {
     stopSingle();
+    recordCardCompleted();
     setState((s) => P.again(s));
+  }, [stopSingle]);
+
+  const markGotIt = useCallback(() => {
+    stopSingle();
+    recordCardCompleted();
+    setState((s) => P.gotIt(s));
   }, [stopSingle]);
 
   const togglePlay = () => setRun((r) => (r?.advance ? null : { key: (r?.key ?? 0) + 1, advance: true }));
@@ -315,7 +325,7 @@ function PlayerScreen({ deck }: { deck: Deck }) {
         <button type="button" className="btn grow" onClick={markAgain}>
           Again
         </button>
-        <button type="button" className="btn grow" onClick={goNext}>
+        <button type="button" className="btn grow" onClick={markGotIt}>
           Got it
         </button>
       </div>

@@ -4,6 +4,7 @@ import { useDeck } from "../deck/DeckContext";
 import { localDate } from "../lib/dates";
 import { deckStateKey, loadPlayerState } from "../lib/playerStorage";
 import { scoreQuiz, selectQuestions, type QuizItem } from "../lib/quiz";
+import { recordQuizFinished } from "../lib/activityStorage";
 import { saveQuizResult } from "../lib/quizStorage";
 import type { Deck } from "../types/deck";
 
@@ -80,6 +81,7 @@ function QuizScreen({ deck }: { deck: Deck }) {
     }
     const result = scoreQuiz(items, answers, deck.cards, deck.sections, localDate());
     saveQuizResult(stateKey, result);
+    recordQuizFinished();
     navigate("/results", { replace: true });
   }
 

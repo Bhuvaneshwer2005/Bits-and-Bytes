@@ -507,3 +507,79 @@ p {
   font-weight: 800;
   line-height: 1;
 }
+
+.heat-details summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.heat {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+  table-layout: fixed;
+}
+
+.heat th {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-muted);
+  padding-bottom: var(--space-1);
+}
+
+.heat-cell {
+  height: 40px;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+}
+
+.heat-l1 {
+  background: color-mix(in srgb, var(--color-accent) 22%, var(--color-surface-2));
+}
+
+.heat-l2 {
+  background: color-mix(in srgb, var(--color-accent) 42%, var(--color-surface-2));
+}
+
+.heat-l3 {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+/* A ring marks a day that counts toward the streak, so the meaning never depends on colour. */
+.heat-counts {
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-ink);
+}
+
+.heat-today {
+  border: 2px dashed var(--color-ink);
+}
+
+.heat-future {
+  background: transparent;
+  border-style: dotted;
+  opacity: 0.55;
+}
+
+.heat-details summary::after {
+  content: "+";
+  margin-left: auto;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.heat-details[open] summary::after {
+  content: "\2212";
+}
+
+.heat-details summary::-webkit-details-marker {
+  display: none;
+}

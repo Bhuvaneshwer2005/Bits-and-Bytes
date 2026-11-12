@@ -1,4 +1,6 @@
 import { Link, Navigate, useNavigate } from "react-router-dom";
+import Heatmap from "../components/Heatmap";
+import { StreakPill, StreakStatus } from "../components/StreakPill";
 import { useDeck } from "../deck/DeckContext";
 import { reviewState } from "../lib/playerState";
 import { deckStateKey, loadPlayerState, savePlayerState } from "../lib/playerStorage";
@@ -45,6 +47,7 @@ export default function Results() {
         <Link to="/deck" className="btn">
           Back
         </Link>
+        <StreakPill />
       </header>
 
       <div className="stack">
@@ -76,6 +79,12 @@ export default function Results() {
           ))}
         </ul>
       </section>
+
+      <section className="card-box stack" aria-label="Your streak">
+        <StreakStatus />
+      </section>
+
+      <Heatmap />
 
       <div className="stack">
         {missed > 0 && (
