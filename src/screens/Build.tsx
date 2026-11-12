@@ -204,7 +204,7 @@ export default function Build() {
         <li className={`step step--${checkStep}`}>
           Checking against your notes{phase === "cards" ? ` (${checked} of ${total})` : ""}
         </li>
-        <li className="step step--later">Building the quiz (next update)</li>
+        <li className="step step--later">Quiz and cheat sheet (prepared while you study)</li>
       </ol>
 
       <p role="status" className="muted">

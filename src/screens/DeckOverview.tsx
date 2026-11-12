@@ -1,4 +1,5 @@
 import { Link, Navigate, useNavigate } from "react-router-dom";
+import CheatSheetButton from "../components/CheatSheetButton";
 import { useDeck } from "../deck/DeckContext";
 
 export default function DeckOverview() {
@@ -142,9 +143,7 @@ export default function DeckOverview() {
         <button type="button" className="btn" onClick={() => navigate("/quiz")}>
           Take the quiz{deck.quiz.length > 0 ? ` (${deck.quiz.length} questions)` : ""}
         </button>
-        <button type="button" className="btn" aria-disabled="true" onClick={(e) => e.preventDefault()}>
-          Cheat sheet (PDF) · coming soon
-        </button>
+        <CheatSheetButton />
       </div>
     </main>
   );

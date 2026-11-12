@@ -54,6 +54,8 @@ export interface Question {
 export interface Summary {
   bullets_by_section: { section_id: string; bullets: string[] }[];
   key_terms: { term: string; meaning: string }[];
+  /** Fingerprint of the verified cards this summary was written from. A different one means the cards changed since. */
+  basis?: string;
 }
 
 export interface Deck {

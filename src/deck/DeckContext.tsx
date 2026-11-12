@@ -10,11 +10,24 @@ import {
   withSectionQuiz,
   type BuildInput,
 } from "../lib/deckBuild";
+import { buildCheatSheet, saveFile } from "../lib/cheatSheet";
+import { localDate } from "../lib/dates";
 import { loadRecent, outlineKey, saveDeck } from "../lib/storage";
+import { buildDeckSummary, currentSummary, summaryIsCurrent, withSummary } from "../lib/summary";
 import type { Card, Deck, Question } from "../types/deck";
 
 export type SectionStatus = "waiting" | "writing" | "checking" | "ready" | "failed";
 export type QuizStatus = "pending" | "ready" | "failed";
+
+export interface CheatSheetState {
+  busy: boolean;
+  /** What happened last time, for the screen reader and the eye. */
+  message?: string;
+  error?: string;
+}
+
+/** The most a download waits for the AI summary before it prints one written from the cards instead. */
+const SUMMARY_WAIT_MS = 15_000;
 
 export interface SectionBuild {
   id: string;
@@ -58,6 +71,10 @@ interface DeckState {
   quizStatus: Record<string, QuizStatus>;
   /** Builds quiz questions for the given sections, or for every section that has none. */
   prepareQuiz: (sectionIds?: string[]) => void;
+  /** Progress of the cheat-sheet download. */
+  cheatSheet: CheatSheetState;
+  /** Makes the one-page PDF from the deck as it is now and hands it to the browser. */
+  downloadCheatSheet: () => Promise<void>;
 }
 
 const DeckContext = createContext<DeckState | null>(null);
@@ -67,6 +84,7 @@ export function DeckProvider({ children }: { children: ReactNode }) {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [build, setBuild] = useState<BuildState | null>(null);
   const [quizStatus, setQuizStatus] = useState<Record<string, QuizStatus>>({});
+  const [cheatSheet, setCheatSheet] = useState<CheatSheetState>({ busy: false });
 
   // The running build, kept in refs so retries and late results always see the latest data.
   const deckRef = useRef<Deck | null>(null);
@@ -75,6 +93,9 @@ export function DeckProvider({ children }: { children: ReactNode }) {
   const quizRef = useRef<Map<string, Question[]>>(new Map());
   const pendingQuiz = useRef(0);
   const runId = useRef(0);
+  /** P5 in flight, so a build that finishes and a download that starts share one call. */
+  const summaryJob = useRef<Promise<void> | null>(null);
+  const prepareSummaryRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   const applyDeck = useCallback((next: Deck | null | ((d: Deck | null) => Deck | null)) => {
     const value = typeof next === "function" ? next(deckRef.current) : next;
@@ -94,16 +115,22 @@ export function DeckProvider({ children }: { children: ReactNode }) {
     return entry ? { key: entry.key, from: entry.from, to: entry.to } : null;
   }, []);
 
-  /** Saves the deck once it is complete: every section built and no quiz still being written. */
+  const saveCurrent = useCallback(() => {
+    const d = deckRef.current;
+    const where = d && storageKey(d);
+    if (d && where) saveDeck(where.key, d, where.from, where.to);
+  }, [storageKey]);
+
+  /** Saves the deck once it is complete: every section built and no quiz still being written. Then writes its cheat-sheet summary. */
   const persistIfComplete = useCallback(() => {
     const d = deckRef.current;
     const input = inputRef.current;
     if (!d || pendingQuiz.current > 0) return;
     // Only a complete deck is cached, so reopening it never shows a half-built one.
     if (input && cardsRef.current.size !== input.sections.length) return;
-    const where = storageKey(d);
-    if (where) saveDeck(where.key, d, where.from, where.to);
-  }, [storageKey]);
+    saveCurrent();
+    void prepareSummaryRef.current();
+  }, [saveCurrent]);
 
   const finishIfDone = useCallback(
     (myRun: number) => {
@@ -225,9 +252,56 @@ export function DeckProvider({ children }: { children: ReactNode }) {
     [runQuiz],
   );
 
+  /** P5 for the deck as it is now, unless its summary already matches the cards. A failure leaves the deck as it was. */
+  const prepareSummary = useCallback((): Promise<void> => {
+    const d = deckRef.current;
+    if (!d || d.meta.sample || summaryIsCurrent(d)) return Promise.resolve();
+    if (summaryJob.current) return summaryJob.current;
+    const myRun = runId.current;
+    const job = (async () => {
+      try {
+        const summary = await buildDeckSummary(d);
+        if (!summary || runId.current !== myRun) return;
+        applyDeck((cur) => (cur && cur.meta.file_hash === d.meta.file_hash ? withSummary(cur, summary) : cur));
+        saveCurrent();
+      } catch {
+        // Not fatal: the cheat sheet is then written from the cards directly.
+      } finally {
+        summaryJob.current = null;
+      }
+    })();
+    summaryJob.current = job;
+    return job;
+  }, [applyDeck, saveCurrent]);
+  prepareSummaryRef.current = prepareSummary;
+
+  const downloadCheatSheet = useCallback(async () => {
+    if (!deckRef.current) return;
+    setCheatSheet({ busy: true });
+    try {
+      // Give the AI summary a moment, but never make the learner wait long for their PDF.
+      await Promise.race([prepareSummary(), new Promise<void>((resolve) => setTimeout(resolve, SUMMARY_WAIT_MS))]);
+      const latest = deckRef.current;
+      if (!latest) return;
+      const { summary, from } = currentSummary(latest);
+      const file = await buildCheatSheet(latest, summary, localDate());
+      saveFile(file);
+      const notes = [
+        "Cheat sheet saved as a PDF.",
+        from === "cards" && !latest.meta.sample ? "It was written from your cards directly, because the AI summary wasn't available." : "",
+        file.level > 0 ? "Some text was shortened to fit one page." : "",
+      ];
+      setCheatSheet({ busy: false, message: notes.filter(Boolean).join(" ") });
+    } catch {
+      setCheatSheet({ busy: false, error: "The cheat sheet couldn't be made. Check your connection and try again." });
+    }
+  }, [prepareSummary]);
+
   const openAndReset = useCallback(
     (d: Deck) => {
       runId.current++; // abandon any build in progress
+      summaryJob.current = null;
+      setCheatSheet({ busy: false });
       inputRef.current = null;
       cardsRef.current = new Map();
       quizRef.current = new Map();
@@ -251,8 +325,10 @@ export function DeckProvider({ children }: { children: ReactNode }) {
       retrySection,
       quizStatus,
       prepareQuiz,
+      cheatSheet,
+      downloadCheatSheet,
     }),
-    [deck, pendingFile, build, startBuild, retrySection, quizStatus, prepareQuiz, openAndReset],
+    [deck, pendingFile, build, startBuild, retrySection, quizStatus, prepareQuiz, cheatSheet, downloadCheatSheet, openAndReset],
   );
 
   return <DeckContext.Provider value={value}>{children}</DeckContext.Provider>;

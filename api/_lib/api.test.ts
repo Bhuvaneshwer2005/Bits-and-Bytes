@@ -92,6 +92,37 @@ describe("P4 (quiz)", () => {
   });
 });
 
+describe("P5 (cheat sheet)", () => {
+  const sections = [
+    { id: "s1", title: "Laws", cards: [{ front: "Second law", back: "Entropy never decreases." }] },
+    { id: "s2", title: "Engines", cards: [{ front: "Heat engine", back: "Turns heat into work." }] },
+  ];
+
+  it("accepts sections with verified cards", () => {
+    expect(cleanInputs("P5", { sections })).not.toBeNull();
+  });
+
+  it("rejects empty, oversized or malformed input", () => {
+    expect(cleanInputs("P5", { sections: [] })).toBeNull();
+    expect(cleanInputs("P5", {})).toBeNull();
+    expect(cleanInputs("P5", { sections: Array.from({ length: 9 }, () => sections[0]) })).toBeNull();
+    expect(cleanInputs("P5", { sections: [{ ...sections[0], cards: [] }] })).toBeNull();
+    expect(cleanInputs("P5", { sections: [{ ...sections[0], cards: [{ front: "x" }] }] })).toBeNull();
+    expect(cleanInputs("P5", { sections: [{ id: "s1", cards: sections[0].cards }] })).toBeNull();
+  });
+
+  it("builds a prompt with the limits, the route context and only the supplied cards", () => {
+    const { system, user } = buildPrompt(cleanInputs("P5", { sections })!);
+    expect(system).toContain("Step 5 of 6: Cheat sheet");
+    expect(system).toContain("up to 4 bullets");
+    expect(system).toContain("18 words");
+    expect(system).toContain("10 key terms");
+    expect(system).toContain("12 words");
+    expect(system).toContain("untrusted data");
+    expect(user).toContain("Entropy never decreases.");
+  });
+});
+
 describe("buildPrompt", () => {
   it("P1 names the page span, tells the model the PDF text is untrusted, and lists the pages", () => {
     const { system, user } = buildPrompt(cleanInputs("P1", { pages: [{ page: 4, text: "alpha" }, { page: 5, text: "beta" }] })!);

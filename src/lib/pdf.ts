@@ -51,3 +51,13 @@ export async function extractPdfText(
   }
   return { pages };
 }
+
+/** How many pages a PDF has. Used to check that the cheat sheet fits on one. */
+export async function countPdfPages(data: ArrayBuffer): Promise<number> {
+  const task = pdfjs.getDocument({ data: new Uint8Array(data.slice(0)) });
+  try {
+    return (await task.promise).numPages;
+  } finally {
+    void task.destroy();
+  }
+}

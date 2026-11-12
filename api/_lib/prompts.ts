@@ -1,7 +1,7 @@
 // Runtime prompts. Source of truth: Part E of docs/route-and-prompt-sheet.md.
 // The server builds the prompt from an allow-listed id so nobody can use /api/ai as a free general chatbot.
 
-export type PromptId = "P1" | "P2" | "P3" | "P4";
+export type PromptId = "P1" | "P2" | "P3" | "P4" | "P5";
 
 export interface Page {
   page: number;
@@ -30,11 +30,17 @@ export interface P4Inputs {
   count: number;
 }
 
+export interface P5Inputs {
+  /** Only sections that have at least one verified card, with those cards. */
+  sections: { id: string; title: string; cards: { front: string; back: string }[] }[];
+}
+
 export type PromptInputs =
   | { id: "P1"; inputs: P1Inputs }
   | { id: "P2"; inputs: P2Inputs }
   | { id: "P3"; inputs: P3Inputs }
-  | { id: "P4"; inputs: P4Inputs };
+  | { id: "P4"; inputs: P4Inputs }
+  | { id: "P5"; inputs: P5Inputs };
 
 export interface BuiltPrompt {
   system: string;
@@ -53,6 +59,8 @@ const FULL_CHARS_PER_PAGE = 4_000;
 const FULL_TOTAL_CHARS = 24_000;
 const MAX_CARDS_IN_P3 = 16;
 const MAX_CARDS_IN_P4 = 14;
+const MAX_SECTIONS_IN_P5 = 8;
+const MAX_CARDS_PER_SECTION_IN_P5 = 14;
 
 function routeContext(opts: {
   n: number;
@@ -133,6 +141,28 @@ export function cleanInputs(id: PromptId, raw: unknown): PromptInputs | null {
       quizCards.push({ id: cid, front, back, source_page: o.source_page as number });
     }
     return { id: "P4", inputs: { section: { id: sid, title }, cards: quizCards, count: count as number } };
+  }
+
+  if (id === "P5") {
+    if (!Array.isArray(r.sections) || r.sections.length === 0 || r.sections.length > MAX_SECTIONS_IN_P5) return null;
+    const sections: P5Inputs["sections"] = [];
+    for (const s of r.sections) {
+      if (!s || typeof s !== "object") return null;
+      const o = s as Record<string, unknown>;
+      const sid = shortText(o.id, 20);
+      const title = shortText(o.title, 100);
+      if (!sid || !title || !Array.isArray(o.cards) || o.cards.length === 0 || o.cards.length > MAX_CARDS_PER_SECTION_IN_P5) return null;
+      const cards: P5Inputs["sections"][number]["cards"] = [];
+      for (const c of o.cards) {
+        if (!c || typeof c !== "object") return null;
+        const front = shortText((c as Record<string, unknown>).front, 400);
+        const back = shortText((c as Record<string, unknown>).back, 600);
+        if (!front || !back) return null;
+        cards.push({ front, back });
+      }
+      sections.push({ id: sid, title, cards });
+    }
+    return { id, inputs: { sections } };
   }
 
   if (!Array.isArray(r.cards) || r.cards.length === 0 || r.cards.length > MAX_CARDS_IN_P3) return null;
@@ -244,9 +274,28 @@ same place; the app shuffles options afterwards.
 Output: {"quiz":[{"card_id":"","type":"mcq","prompt":"","options":["","","",""],"answer_index":0,"explanation":""}]}`;
       return { system, user: `CARDS:\n${JSON.stringify(cards)}` };
     }
+
+    case "P5": {
+      const { sections } = p.inputs;
+      const system = `${routeContext({
+        n: 5,
+        name: "Cheat sheet",
+        prevName: "Quiz",
+        prevSummary: "wrote quiz questions from the cards the PDF supports",
+        goal: "condense the verified cards into a one-page cheat sheet",
+        nextName: "PDF layout",
+        nextNeeds: "short bullets and key terms that fit on one A4 page, which code lays out and shrinks if needed",
+      })}
+
+From the verified cards only, write a one-page cheat sheet. For each section, up to 4 bullets of at most
+18 words each. Then up to 10 key terms across the deck, each with a meaning of at most 12 words. Add no
+facts that are not in the cards. Use each section's id exactly as given.
+Output: {"summary":{"bullets_by_section":[{"section_id":"","bullets":[""]}],"key_terms":[{"term":"","meaning":""}]}}`;
+      return { system, user: `SECTIONS:\n${JSON.stringify(sections)}` };
+    }
   }
 }
 
 export function isPromptId(x: unknown): x is PromptId {
-  return x === "P1" || x === "P2" || x === "P3" || x === "P4";
+  return x === "P1" || x === "P2" || x === "P3" || x === "P4" || x === "P5";
 }

@@ -1,4 +1,5 @@
 import { Link, Navigate, useNavigate } from "react-router-dom";
+import CheatSheetButton from "../components/CheatSheetButton";
 import Heatmap from "../components/Heatmap";
 import { StreakPill, StreakStatus } from "../components/StreakPill";
 import { useDeck } from "../deck/DeckContext";
@@ -95,9 +96,7 @@ export default function Results() {
         <button type="button" className={`btn${missed === 0 ? " btn--primary" : ""}`} onClick={() => navigate("/quiz")}>
           Retake the quiz
         </button>
-        <button type="button" className="btn" aria-disabled="true" onClick={(e) => e.preventDefault()}>
-          Download cheat sheet · coming soon
-        </button>
+        <CheatSheetButton />
         <button type="button" className="btn" onClick={() => navigate("/deck")}>
           Back to deck
         </button>

@@ -197,6 +197,22 @@ function callMock(user: string, promptId: PromptId): ProviderResult {
     });
   }
 
+  if (promptId === "P5") {
+    const sections = JSON.parse(user.slice(user.indexOf("[")).trim()) as { id: string; cards: { front: string; back: string }[] }[];
+    return done({
+      summary: {
+        bullets_by_section: sections.map((s) => ({
+          section_id: s.id,
+          bullets: s.cards.slice(0, 4).map((c) => `${c.front.replace(/\?$/, "")}: ${c.back}`.split(" ").slice(0, 16).join(" ")),
+        })),
+        key_terms: sections
+          .flatMap((s) => s.cards)
+          .slice(0, 6)
+          .map((c) => ({ term: c.front.split(" ").slice(0, 3).join(" "), meaning: c.back.split(" ").slice(0, 8).join(" ") })),
+      },
+    });
+  }
+
   if (promptId === "P3") {
     const ids = [...user.matchAll(/"id":"([^"]+)"/g)].map((m) => m[1]);
     return done({
