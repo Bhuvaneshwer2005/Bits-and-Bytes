@@ -130,8 +130,8 @@ export default function Home() {
       </button>
 
       <p className="muted">
-        Your PDF text is read in your browser, then sent to an AI model to build cards. The free Gemini tier may use it to
-        improve Google's products. We don't store your PDF.
+        Your PDF stays on your device. Only its text is sent to a free AI service to write the cards, and that service may keep or
+        use it under its own terms, so don&rsquo;t upload anything private. We don&rsquo;t store your PDF or its text.
       </p>
 
       <section className="stack" aria-labelledby="recent-heading">

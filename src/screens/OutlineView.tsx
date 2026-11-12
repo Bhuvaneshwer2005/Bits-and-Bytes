@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import OutlineList from "../components/OutlineList";
 import { loadOutline } from "../lib/storage";
 
-/** Shows a saved outline from "Recent decks". Cards are added in a later step. */
+/** Shows a saved outline from "Recent decks". that was saved before its cards were built. */
 export default function OutlineView() {
   const { key = "" } = useParams();
   const outline = loadOutline(key);
@@ -23,12 +23,17 @@ export default function OutlineView() {
             </p>
           </div>
           <OutlineList sections={outline.sections} />
-          <p className="notice">Cards, source checks and the quiz arrive in the next updates. Your outline is saved.</p>
+          <p className="notice">
+            This outline was saved before its cards were built. Choose the same PDF again from Home to build the cards.
+          </p>
         </>
       ) : (
-        <p className="notice" role="alert">
-          We couldn't find that saved outline. It may have been cleared from this browser.
-        </p>
+        <>
+          <h1>Saved outline</h1>
+          <p className="notice" role="alert">
+            We couldn&rsquo;t find that saved outline. It may have been cleared from this browser.
+          </p>
+        </>
       )}
     </main>
   );

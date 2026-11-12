@@ -47,6 +47,9 @@ p {
   top: -100px;
   background: var(--color-accent);
   color: var(--color-on-accent);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
   z-index: 10;
@@ -588,4 +591,8 @@ textarea.field {
 
 .heat-details summary::-webkit-details-marker {
   display: none;
+}
+
+.offline-banner {
+  margin: var(--space-3) var(--space-4) 0;
 }

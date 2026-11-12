@@ -248,6 +248,8 @@ function PlayerScreen({ deck }: { deck: Deck }) {
         <span className="pill">{deck.meta.ai_generated ? "AI-generated" : "Sample deck"}</span>
       </header>
 
+      <h1 className="sr-only">Flashcards</h1>
+
       <div className="stack">
         <p className="muted" role="status">
           Card {state.index + 1} of {state.queue.length}

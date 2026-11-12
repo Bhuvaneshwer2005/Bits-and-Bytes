@@ -6,7 +6,8 @@ import Home from "./screens/Home";
 import OutlineView from "./screens/OutlineView";
 import Player from "./screens/Player";
 import DeckOverview from "./screens/DeckOverview";
-import Placeholder from "./screens/Placeholder";
+import NotFound from "./screens/NotFound";
+import OfflineBanner from "./components/OfflineBanner";
 import Quiz from "./screens/Quiz";
 import Results from "./screens/Results";
 
@@ -18,6 +19,7 @@ export default function App() {
           Skip to content
         </a>
         <div className="app">
+          <OfflineBanner />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/build" element={<Build />} />
@@ -27,7 +29,7 @@ export default function App() {
             <Route path="/edit/:cardId" element={<EditCard />} />
             <Route path="/quiz" element={<Quiz />} />
             <Route path="/results" element={<Results />} />
-            <Route path="*" element={<Placeholder title="Page not found" arrivesIn="never, check the address" />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
       </BrowserRouter>
