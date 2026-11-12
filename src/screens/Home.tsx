@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { APP_NAME, DEFAULT_DAILY_GOAL } from "../config";
 import { useDeck } from "../deck/DeckContext";
 import { checkFileBasics, PROBLEM_MESSAGES } from "../lib/limits";
-import { loadRecent } from "../lib/storage";
+import { loadDeck, loadRecent } from "../lib/storage";
 
 export default function Home() {
   const navigate = useNavigate();
-  const { openSampleDeck, setPendingFile } = useDeck();
+  const { openSampleDeck, openDeck, setPendingFile } = useDeck();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -16,6 +16,16 @@ export default function Home() {
   function tryTheSampleDeck() {
     openSampleDeck();
     navigate("/deck");
+  }
+
+  function openRecent(key: string, hasDeck: boolean | undefined) {
+    const saved = hasDeck ? loadDeck(key) : null;
+    if (saved) {
+      openDeck(saved);
+      navigate("/deck");
+    } else {
+      navigate(`/outline/${key}`);
+    }
   }
 
   function handleFile(file: File | undefined) {
@@ -118,10 +128,10 @@ export default function Home() {
           <ul className="list">
             {recent.map((r) => (
               <li key={r.key}>
-                <button type="button" className="list-item list-button" onClick={() => navigate(`/outline/${r.key}`)}>
+                <button type="button" className="list-item list-button" onClick={() => openRecent(r.key, r.has_deck)}>
                   <span>
                     {r.file_name}
-                    <span className="muted"> · pages {r.from}-{r.to} · {r.sections} sections</span>
+                    <span className="muted"> · pages {r.from}-{r.to} · {r.sections} sections{r.has_deck ? " · ready" : " · outline only"}</span>
                   </span>
                 </button>
               </li>

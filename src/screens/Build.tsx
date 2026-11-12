@@ -1,16 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import OutlineList from "../components/OutlineList";
 import { useDeck } from "../deck/DeckContext";
 import { AiFailure, callAI, type AiFailureKind } from "../lib/ai";
 import { sha256Hex } from "../lib/hash";
 import { looksScanned, MAX_USED_PAGES, PROBLEM_MESSAGES } from "../lib/limits";
 import { normalizeOutline } from "../lib/outline";
 import { extractPdfText, PdfError } from "../lib/pdf";
-import { loadOutline, outlineKey, saveOutline } from "../lib/storage";
+import { loadDeck, loadOutline, outlineKey, saveOutline } from "../lib/storage";
 import type { Section } from "../types/deck";
 
-type Phase = "reading" | "range" | "outline" | "done" | "error";
+type Phase = "reading" | "range" | "outline" | "cards" | "error";
 
 const AI_MESSAGES: Record<AiFailureKind, string> = {
   rate_limited: "The AI has hit its free limit for the moment. Try again in a minute, or open the sample deck.",
@@ -25,8 +24,10 @@ interface Problem {
   retryable: boolean;
 }
 
+type StepState = "now" | "done" | "failed" | "pending" | "later";
+
 export default function Build() {
-  const { pendingFile, openSampleDeck } = useDeck();
+  const { pendingFile, openSampleDeck, openDeck, build, startBuild, retrySection } = useDeck();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>("reading");
   const [progress, setProgress] = useState({ done: 0, total: 0 });
@@ -35,11 +36,10 @@ export default function Build() {
   const [fromText, setFromText] = useState("1");
   const [toText, setToText] = useState("1");
   const [rangeError, setRangeError] = useState<string | null>(null);
-  const [outline, setOutline] = useState<Section[] | null>(null);
-  const [reused, setReused] = useState(false);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [failedAt, setFailedAt] = useState<"reading" | "outline">("reading");
   const started = useRef(false);
+  const navigated = useRef(false);
 
   useEffect(() => {
     if (!pendingFile || started.current) return;
@@ -47,6 +47,15 @@ export default function Build() {
     void readPdf(pendingFile);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Move on to the deck as soon as the first section is ready; the rest keeps building in the background.
+  const firstReady = build?.sections.some((s) => s.status === "ready") ?? false;
+  useEffect(() => {
+    if (phase === "cards" && firstReady && !navigated.current) {
+      navigated.current = true;
+      navigate("/deck", { replace: true });
+    }
+  }, [phase, firstReady, navigate]);
 
   if (!pendingFile) return <Navigate to="/" replace />;
 
@@ -68,6 +77,14 @@ export default function Build() {
     }
   }
 
+  function startCards(sections: Section[], from: number, to: number, model: string) {
+    const pageTexts = new Map<number, string>();
+    for (let p = from; p <= to; p++) pageTexts.set(p, pages[p - 1]);
+    startBuild({ fileName: pendingFile!.name, hash, from, to, totalPages: pages.length, model, sections, pageTexts });
+    navigated.current = false;
+    setPhase("cards");
+  }
+
   function confirmRange() {
     const from = Number(fromText);
     const to = Number(toText);
@@ -85,11 +102,16 @@ export default function Build() {
     }
     setRangeError(null);
 
-    const cached = loadOutline(outlineKey(hash, from, to));
+    const key = outlineKey(hash, from, to);
+    const savedDeck = loadDeck(key);
+    if (savedDeck) {
+      openDeck(savedDeck); // the same file and pages as before: no AI needed
+      navigate("/deck", { replace: true });
+      return;
+    }
+    const cached = loadOutline(key);
     if (cached) {
-      setOutline(cached.sections);
-      setReused(true);
-      setPhase("done");
+      startCards(cached.sections, from, to, cached.model);
       return;
     }
     void buildOutline(from, to);
@@ -112,9 +134,7 @@ export default function Build() {
         model,
         created: new Date().toISOString(),
       });
-      setOutline(value);
-      setReused(false);
-      setPhase("done");
+      startCards(value, from, to, model);
     } catch (e) {
       const kind: AiFailureKind = e instanceof AiFailure ? e.kind : "unavailable";
       setProblem({ message: AI_MESSAGES[kind], retryable: kind !== "not_configured" });
@@ -133,16 +153,35 @@ export default function Build() {
     navigate("/deck");
   }
 
-  const readingState = phase === "reading" ? "now" : failedAt === "reading" && phase === "error" ? "failed" : "done";
-  const outlineState =
-    phase === "outline" ? "now" : phase === "done" ? "done" : phase === "error" && failedAt === "outline" ? "failed" : "pending";
+  const total = build?.sections.length ?? 0;
+  const written = build?.sections.filter((s) => s.status === "checking" || s.status === "ready").length ?? 0;
+  const checked = build?.sections.filter((s) => s.status === "ready").length ?? 0;
+  const anyFailed = build?.sections.some((s) => s.status === "failed") ?? false;
+  const allSettled = build ? !build.running : false;
+
+  const reading: StepState = phase === "reading" ? "now" : failedAt === "reading" && phase === "error" ? "failed" : "done";
+  const outline: StepState =
+    phase === "outline"
+      ? "now"
+      : phase === "cards"
+        ? "done"
+        : phase === "error" && failedAt === "outline"
+          ? "failed"
+          : "pending";
+  const cardsStep: StepState = phase !== "cards" ? "pending" : allSettled && written < total ? "failed" : written === total ? "done" : "now";
+  const checkStep: StepState = phase !== "cards" ? "pending" : allSettled && checked < total ? "failed" : checked === total ? "done" : "now";
+
   const statusText =
     phase === "reading"
       ? `Reading your PDF, page ${progress.done} of ${progress.total || "?"}`
       : phase === "outline"
         ? "Finding the sections"
-        : phase === "done"
-          ? "Outline ready"
+        : phase === "cards"
+          ? allSettled
+            ? anyFailed
+              ? "Some sections need another try."
+              : "Deck ready."
+            : `Writing and checking cards, ${checked} of ${total} sections ready`
           : "";
 
   return (
@@ -154,12 +193,18 @@ export default function Build() {
         <span className="muted file-name">{pendingFile.name}</span>
       </header>
 
-      <h1>{phase === "done" ? "Your outline" : "Building your deck"}</h1>
+      <h1>Building your deck</h1>
 
       <ol className="steps" aria-label="Progress">
-        <li className={`step step--${readingState}`}>Reading your PDF</li>
-        <li className={`step step--${outlineState}`}>Finding the sections</li>
-        <li className="step step--later">Writing cards, checking sources and building the quiz (next updates)</li>
+        <li className={`step step--${reading}`}>Reading your PDF</li>
+        <li className={`step step--${outline}`}>Finding the sections</li>
+        <li className={`step step--${cardsStep}`}>
+          Writing cards{phase === "cards" ? ` (${written} of ${total})` : ""}
+        </li>
+        <li className={`step step--${checkStep}`}>
+          Checking against your notes{phase === "cards" ? ` (${checked} of ${total})` : ""}
+        </li>
+        <li className="step step--later">Building the quiz (next update)</li>
       </ol>
 
       <p role="status" className="muted">
@@ -217,9 +262,29 @@ export default function Build() {
             </p>
           )}
           <button type="button" className="btn btn--primary" onClick={confirmRange}>
-            Build outline
+            Build deck
           </button>
         </section>
+      )}
+
+      {phase === "cards" && build && (
+        <ul className="list" aria-label="Sections">
+          {build.sections.map((s) => (
+            <li key={s.id} className="list-item">
+              <span>
+                {s.title}
+                {s.status === "failed" && <span className="muted"> · {s.error}</span>}
+              </span>
+              {s.status === "failed" ? (
+                <button type="button" className="btn" onClick={() => retrySection(s.id)}>
+                  Try again
+                </button>
+              ) : (
+                <span className="muted">{SECTION_LABEL[s.status](s.cards)}</span>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
 
       {phase === "error" && problem && (
@@ -243,16 +308,24 @@ export default function Build() {
         </div>
       )}
 
-      {phase === "done" && outline && (
-        <>
-          {reused && <p className="muted">Reused your saved outline, so no AI was used.</p>}
-          <OutlineList sections={outline} />
-          <p className="notice">Cards, source checks and the quiz arrive in the next updates. Your outline is saved.</p>
-          <Link to="/" className="btn btn--primary">
-            Back to home
-          </Link>
-        </>
+      {phase === "cards" && allSettled && !firstReady && (
+        <div className="stack">
+          <p className="notice" role="alert">
+            We couldn't build any cards this time. Try the sections again, or open the sample deck.
+          </p>
+          <button type="button" className="btn btn--primary" onClick={openSample}>
+            Open the sample deck
+          </button>
+        </div>
       )}
     </main>
   );
 }
+
+const SECTION_LABEL: Record<"waiting" | "writing" | "checking" | "ready" | "failed", (cards: number) => string> = {
+  waiting: () => "Waiting",
+  writing: () => "Writing cards",
+  checking: () => "Checking",
+  ready: (n) => `${n} cards`,
+  failed: () => "",
+};

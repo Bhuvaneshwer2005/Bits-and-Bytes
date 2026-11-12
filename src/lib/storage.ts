@@ -1,8 +1,9 @@
-import type { Section } from "../types/deck";
+import type { Deck, Section } from "../types/deck";
 
 // Every read and write is guarded: storage can be blocked or corrupt, and the app must still work.
 
 const OUTLINE_PREFIX = "sd.outline.";
+const DECK_PREFIX = "sd.deck.";
 const RECENT_KEY = "sd.recent";
 const MAX_RECENT = 10;
 
@@ -24,6 +25,8 @@ export interface RecentEntry {
   to: number;
   sections: number;
   created: string;
+  /** True once a full deck is saved, so opening it needs no AI. */
+  has_deck?: boolean;
 }
 
 export const outlineKey = (hash: string, from: number, to: number) => `${hash}_${from}-${to}`;
@@ -62,6 +65,27 @@ export function saveOutline(outline: CachedOutline): void {
     to: outline.to,
     sections: outline.sections.length,
     created: outline.created,
+  });
+  write(RECENT_KEY, recent.slice(0, MAX_RECENT));
+}
+
+export function loadDeck(key: string): Deck | null {
+  const value = read<Deck>(DECK_PREFIX + key);
+  return value && Array.isArray(value.cards) && Array.isArray(value.sections) ? value : null;
+}
+
+/** Saves a finished deck and marks its Recent entry as openable without the AI. */
+export function saveDeck(key: string, deck: Deck, from: number, to: number): void {
+  write(DECK_PREFIX + key, deck);
+  const recent = loadRecent().filter((r) => r.key !== key);
+  recent.unshift({
+    key,
+    file_name: deck.meta.source_file,
+    from,
+    to,
+    sections: deck.sections.length,
+    created: deck.meta.created,
+    has_deck: true,
   });
   write(RECENT_KEY, recent.slice(0, MAX_RECENT));
 }

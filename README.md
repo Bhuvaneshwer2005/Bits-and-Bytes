@@ -17,6 +17,6 @@ The `/api` functions run on Vercel. Copy `.env.example` to `.env` for local keys
 
 ## Status
 
-v0.2.0: PDF upload, in-browser text extraction, page-range picker, AI outline (Gemini first, Groq backup), saved outlines. Cards, player, quiz, streak and PDF export come in later tagged versions.
+v0.3.0: PDF upload, in-browser text extraction, page-range picker, AI outline, flashcards with source quotes, a grounding check that flags unsupported cards, and saved decks. Player, quiz, streak and PDF export come in later tagged versions.
 
 Local AI testing without keys: put `AI_MOCK=1` in `.env` (never in production). Real use needs `GEMINI_API_KEY` and `GROQ_API_KEY`.
