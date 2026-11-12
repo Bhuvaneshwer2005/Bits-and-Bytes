@@ -28,7 +28,7 @@ Drop PDF -> extract text in browser -> staged AI calls (outline, cards, groundin
 5. **Quiz:** built per section, shown after the deck, only for cards the user viewed; multiple choice, true/false, cloze; seeded shuffled options; instant feedback with icon plus text, explanation and source page; missed cards go back for review; results with score and weakest section.
 6. **Streak and daily goal:** a day counts after 10 cards plus a finished quiz; daily goal of 5, 10 or 20 cards; local calendar day; stored in the browser.
 7. **Calendar heatmap:** 5 weeks, each cell shows its number and has a text label (not colour-only); demo uses a clearly labelled "sample history" switch.
-8. **AI transparency:** "AI-generated" label, source page on every card and question, a "check this" flag when a card is not supported by the PDF (quote not found, or P3 says no), a privacy note that PDF text goes to an AI model, and the hand-edit log in `docs/ai-log.md`.
+8. **AI transparency:** "AI-generated" label, source page on every card and question, a "check this" flag when a card is not supported by the PDF (quote not found, or P3 says no), a privacy note that PDF text goes to an AI model (and, on the free Gemini tier, may be used by Google to improve its products), and the hand-edit log in `docs/ai-log.md`.
 9. **Sample deck:** bundled deck, quiz and cheat sheet, used as the demo and as the fallback when the AI is unavailable.
 10. **States:** empty, error (scanned, too large, AI unavailable, no voices, offline).
 11. **Accessibility:** contrast 4.5:1, visible focus, 44 px tap targets, aria-labels, headings in order, keyboard use, reduced motion, 200% text zoom without clipping.
@@ -49,6 +49,6 @@ XP, streak freezes, badges, reminder notifications, four PDF templates, diagram 
 - Stack default = React + Vite + TypeScript, pdf.js, pdfmake, zod, one serverless function.
 
 ## Still open
-- Which AI model and provider (the `/api/ai` wrapper keeps it swappable).
+- Exact model names and the real free limits (confirm once the keys exist). Provider order is decided: Gemini free first, Groq backup, then the sample deck. Zero-cost budget, so expect to spend time on rate-limit handling and trimming prompts. A Prompt Guard safety scan is an optional later extra.
 - Demo chapter for the sample deck.
 - App name.

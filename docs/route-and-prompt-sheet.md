@@ -22,7 +22,8 @@ prototype 15 (a live HTTPS link must work end to end on a phone), presentation 1
 A late submission scores 0, so the app must be deployable after every step.
 
 HOW IT WORKS: PDF text is extracted in the browser (pdf.js). One small serverless function, /api/ai,
-holds the API key (from env vars only), rate-limits, and calls the model (provider swappable). It
+holds the API keys (from env vars only), rate-limits, and calls Gemini (free tier) first, then Groq
+if Gemini errors or hits a limit (providers swappable). It
 runs staged prompts that return JSON only: P1 outline -> P2 cards per section -> P3 grounding check
 -> P4 quiz per section -> P5 cheat-sheet summary; P6 regenerates one card on demand. Code validates
 every response against a zod schema (one retry, then fall back to the bundled sample deck with a
@@ -122,7 +123,7 @@ wireframe 1 (streak pill and daily-goal bar with static placeholders, drop zone 
 yet, "Try the sample deck" button, privacy note); a bundled sample deck at src/data/sample-deck.json
 matching Part C (about 12 cards over 2 sections, sample content is fine for now); a serverless
 function api/health returning {ok:true} and a stub api/ai that returns 501; .env.example listing
-AI_PROVIDER and AI_API_KEY; .gitignore covering .env; docs/ai-log.md with the table header.
+GEMINI_API_KEY and GROQ_API_KEY (empty values); .gitignore covering .env; docs/ai-log.md with the table header.
 Deploy to Vercel (or Netlify) connected to the GitHub repo and confirm the live HTTPS URL opens on
 a phone width.
 Acceptance: live URL works on a phone; "Try the sample deck" opens DeckOverview from the sample
@@ -137,9 +138,10 @@ Implement the upload flow (wireframes 1 and 2). Drag-and-drop plus click-to-brow
 only, max 20 MB and 60 pages, with friendly errors. Extract text per page in the browser with
 pdf.js; if a PDF yields almost no text, show the scanned-PDF error (wireframe 8) instead of trying
 OCR. Compute a SHA-256 file hash. Page-range picker defaulting to all pages (cap 40 pages used).
-Implement api/ai: reads AI_PROVIDER and AI_API_KEY from env, accepts {promptId, system, user}, calls
-the model, returns the raw JSON text, rate-limits per IP, and never logs the key or the user's PDF
-text. Implement a client helper callAI(promptId, inputs) that validates the response against a zod
+Implement api/ai: reads GEMINI_API_KEY and GROQ_API_KEY from env, accepts {promptId, system, user},
+calls Gemini first (JSON output mode) and falls back to Groq on a rate limit or error, returns the
+raw JSON text, rate-limits per IP, paces parallel section calls to stay inside free per-minute
+limits, and never logs the keys or the user's PDF text. Implement a client helper callAI(promptId, inputs) that validates the response against a zod
 schema, retries once on invalid JSON, and on a second failure throws a typed AiFailure so the UI
 can fall back. Wire prompt P1 (Part E) and show the Build screen's named stages with real progress,
 then the section outline. Recent-decks list reads localStorage by file hash and reuses a cached
@@ -373,7 +375,7 @@ Lives in `docs/ai-log.md`, created in B0 and updated at every step. It is submit
 The app mirrors this for users: an "AI-generated" label on every deck, the source page on every card and question, a "check this" flag when `in_source` is false, and `edited_by_user` marking cards a person changed.
 
 ## Part G. Open items
-1. Which model and provider (the `/api/ai` wrapper keeps it swappable).
+1. Provider order is decided (Gemini free tier first, Groq backup, then the sample deck). Exact model names to confirm when the keys exist, along with the real free limits; trim prompts if they are tight.
 2. Sample deck chapter for the demo.
 3. Whether P3 uses the same model or a cheaper one.
 4. App name.
