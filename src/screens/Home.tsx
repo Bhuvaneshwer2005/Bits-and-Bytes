@@ -129,7 +129,7 @@ export default function Home() {
         Try the sample deck
       </button>
       <a className="btn" href="/sample-thermodynamics-notes.pdf" download>
-        Download a sample PDF to try the upload
+        Download a sample PDF
       </a>
 
       <p className="muted">
@@ -149,9 +149,11 @@ export default function Home() {
             {recent.map((r) => (
               <li key={r.key}>
                 <button type="button" className="list-item list-button" onClick={() => openRecent(r.key, r.has_deck)}>
-                  <span>
-                    {r.file_name}
-                    <span className="muted"> · pages {r.from}-{r.to} · {r.sections} sections{r.has_deck ? " · ready" : " · outline only"}</span>
+                  <span className="recent-text">
+                    <span className="recent-name">{r.file_name}</span>
+                    <span className="muted">
+                      pages {r.from}-{r.to} · {r.sections} sections{r.has_deck ? " · ready" : " · outline only"}
+                    </span>
                   </span>
                 </button>
               </li>

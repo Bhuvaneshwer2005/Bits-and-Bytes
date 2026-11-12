@@ -596,3 +596,25 @@ textarea.field {
 .offline-banner {
   margin: var(--space-3) var(--space-4) 0;
 }
+
+.list-button {
+  min-width: 0;
+}
+
+.recent-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.recent-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.list-item > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
