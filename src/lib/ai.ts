@@ -18,6 +18,9 @@ interface AiResponse {
   model: string;
 }
 
+/** An unavailable AI (a provider hiccup or a bad JSON-mode answer) is retried once after this pause. */
+const UNAVAILABLE_RETRY_MS = 1500;
+
 /** How long we are willing to wait, and how often, when the provider says "slow down". */
 const MAX_RATE_LIMIT_RETRIES = 3;
 const MAX_WAIT_SECONDS = 25;
@@ -59,8 +62,7 @@ async function requestPatiently(promptId: string, inputs: unknown, wait: (ms: nu
 
 /**
  * Calls a prompt and runs `validate` on the parsed JSON. `validate` should throw if the output is unusable.
- * An invalid answer is retried once. A rate limit is waited out a few times. Other failed requests are not
- * retried (the server already tries both providers).
+ * An invalid or unavailable answer is retried once. A rate limit is waited out a few times.
  */
 export async function callAI<T>(
   promptId: string,
@@ -69,7 +71,17 @@ export async function callAI<T>(
   wait: (ms: number) => Promise<void> = sleep,
 ): Promise<{ value: T; provider: string; model: string }> {
   for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await requestPatiently(promptId, inputs, wait);
+    let res: AiResponse;
+    try {
+      res = await requestPatiently(promptId, inputs, wait);
+    } catch (e) {
+      // Both providers already had their turn on the server, but a second try often gets through.
+      if (e instanceof AiFailure && e.kind === "unavailable" && attempt === 0) {
+        await wait(UNAVAILABLE_RETRY_MS);
+        continue;
+      }
+      throw e;
+    }
     try {
       return { value: validate(JSON.parse(res.text)), provider: res.provider, model: res.model };
     } catch {

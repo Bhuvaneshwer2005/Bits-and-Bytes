@@ -34,6 +34,16 @@ export class ProviderError extends Error {
   ) {
     super(`${provider} failed with status ${status}`);
   }
+
+  /** Every attempt made before giving up (provider, model, status, short reason). No keys or user text. */
+  tried: Attempt[] = [];
+}
+
+export interface Attempt {
+  provider: ProviderName;
+  model?: string;
+  status: number;
+  reason?: string;
 }
 
 const TIMEOUT_MS = 25_000;
@@ -128,17 +138,23 @@ async function callGroqModel(system: string, user: string, model: string): Promi
 /** Tries each Groq model in turn when one is rate limited (429) or missing (404). Other errors stop the chain. */
 async function callGroq(system: string, user: string): Promise<ProviderResult> {
   const skipped: string[] = [];
+  const attempts: Attempt[] = [];
   let last: ProviderError | null = null;
   for (const model of groqModels()) {
     try {
       const result = await callGroqModel(system, user, model);
       return skipped.length ? { ...result, skippedModels: skipped } : result;
     } catch (e) {
-      if (!(e instanceof ProviderError) || !(e.status === 429 || e.status === 404)) throw e;
-      last = e;
+      // A timeout or network error is not a ProviderError; treat it as one so the next model still gets a turn.
+      const err = e instanceof ProviderError ? e : new ProviderError("groq", 504, false, "timeout or network error");
+      last = err;
+      attempts.push({ provider: "groq", model, status: err.status, reason: err.reason });
+      // Bad key or no access: another model will not help.
+      if (err.status === 401 || err.status === 403) break;
       skipped.push(model);
     }
   }
+  last!.tried = attempts;
   throw last!;
 }
 
@@ -220,6 +236,7 @@ export function noteFailure(name: ProviderName, status: number, now = Date.now()
 export async function generate(system: string, user: string, promptId: PromptId): Promise<ProviderResult> {
   let last: ProviderError | null = null;
   const failed: NonNullable<ProviderResult["fallbackFrom"]> = [];
+  const allTried: Attempt[] = [];
   const names = configuredProviders();
   // never skip the only provider we have, even if it failed before
   const usable = names.filter((n) => !isDisabled(n));
@@ -232,8 +249,10 @@ export async function generate(system: string, user: string, promptId: PromptId)
       last = e instanceof ProviderError ? e : new ProviderError(name, 502, false);
       noteFailure(name, last.status);
       failed.push({ provider: name, status: last.status, reason: last.reason });
+      allTried.push(...(last.tried.length ? last.tried : [{ provider: name, status: last.status, reason: last.reason }]));
       console.error(`provider ${name} failed (status ${last.status})`); // status only, never keys or text
     }
   }
+  if (last) last.tried = allTried;
   throw last ?? new Error("no provider configured");
 }

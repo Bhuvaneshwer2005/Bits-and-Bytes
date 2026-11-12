@@ -31,6 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (e instanceof ProviderError && e.rateLimited) {
       return res.status(429).json({ error: "rate_limited", source: "provider", retry_after: e.retryAfter ?? 10, rate: e.rate });
     }
-    return res.status(502).json({ error: "ai_unavailable" });
+    // `tried` lists each attempt's status and the provider's short error, so failures can be diagnosed from the browser
+    return res.status(502).json({ error: "ai_unavailable", tried: e instanceof ProviderError ? e.tried : [] });
   }
 }

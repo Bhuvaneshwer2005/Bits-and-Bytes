@@ -147,9 +147,49 @@ describe("providers", () => {
     }
   });
 
+  it("keeps trying other Groq models after a 400 or 500, stops on 401, and lists what it tried", async () => {
+    const { generate, ProviderError } = await import("./providers");
+    const { vi } = await import("vitest");
+    const saved = { g: process.env.GROQ_API_KEY, m: process.env.GROQ_MODELS, k: process.env.GEMINI_API_KEY };
+    process.env.GROQ_API_KEY = "test-key";
+    process.env.GROQ_MODELS = "m1,m2,m3";
+    delete process.env.GEMINI_API_KEY;
+    try {
+      const run = async (statuses: Record<string, number>) => {
+        const calls: string[] = [];
+        vi.stubGlobal("fetch", async (_u: string, init: { body: string }) => {
+          const model = JSON.parse(init.body).model as string;
+          calls.push(model);
+          const status = statuses[model] ?? 200;
+          return status === 200
+            ? new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 })
+            : new Response(JSON.stringify({ error: { message: `fail ${status}` } }), { status });
+        });
+        return { calls, result: await generate("s", "u", "P1").then((r) => r, (e) => e) };
+      };
+
+      const recovered = await run({ m1: 400, m2: 500 });
+      expect(recovered.calls).toEqual(["m1", "m2", "m3"]);
+      expect(recovered.result.model).toBe("m3");
+
+      const allFail = await run({ m1: 500, m2: 400, m3: 500 });
+      expect(allFail.result).toBeInstanceOf(ProviderError);
+      expect(allFail.result.tried.map((t: { model: string; status: number }) => `${t.model}:${t.status}`)).toEqual(["m1:500", "m2:400", "m3:500"]);
+
+      const badKey = await run({ m1: 401 });
+      expect(badKey.calls).toEqual(["m1"]);
+    } finally {
+      vi.unstubAllGlobals();
+      for (const [k, v] of [["GROQ_API_KEY", saved.g], ["GROQ_MODELS", saved.m], ["GEMINI_API_KEY", saved.k]] as const) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
+  });
+
   it("skips a provider for ten minutes after a 403, but not after a 429 or 500", async () => {
     const { isDisabled, noteFailure } = await import("./providers");
-    const t = 10_000_000;
+    const t = Date.now() + 3_600_000; // well after any earlier test marked a provider disabled
     noteFailure("gemini", 429, t);
     noteFailure("groq", 500, t);
     expect(isDisabled("gemini", t + 1)).toBe(false);

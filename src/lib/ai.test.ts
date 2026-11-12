@@ -50,10 +50,27 @@ describe("callAI", () => {
     await expect(callAI("P1", {}, strict, async () => {})).rejects.toBeInstanceOf(AiFailure);
   });
 
-  it("does not retry other failures", async () => {
+  it("retries an unavailable AI once, then gives up", async () => {
     const fetchMock = vi.fn().mockImplementation(async () => json(502, { error: "ai_unavailable" }));
     vi.stubGlobal("fetch", fetchMock);
     await expect(callAI("P1", {}, identity, async () => {})).rejects.toMatchObject({ kind: "unavailable" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("recovers when the second try gets through", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json(502, { error: "ai_unavailable" }))
+      .mockResolvedValueOnce(ok({ fine: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await callAI("P1", {}, identity, async () => {});
+    expect(res.value).toEqual({ fine: true });
+  });
+
+  it("does not retry when the AI is not configured", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => json(503, { error: "not_configured" }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(callAI("P1", {}, identity, async () => {})).rejects.toMatchObject({ kind: "not_configured" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
