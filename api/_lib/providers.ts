@@ -113,7 +113,19 @@ export function groqModels(): string[] {
   return list.length ? list : ["openai/gpt-oss-120b"];
 }
 
-async function callGroqModel(system: string, user: string, model: string): Promise<ProviderResult> {
+/** Pulls the JSON object out of a reply that may have fences or chatter around it. The client still validates it. */
+export function extractJson(text: string): string {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  return start !== -1 && end > start ? text.slice(start, end + 1) : text.trim();
+}
+
+/**
+ * Groq's strict JSON mode sometimes rejects a model's output with a 400 ("Failed to validate JSON"), which
+ * the smaller model does often. When that happens we ask the same model again without strict mode and
+ * pull the JSON out ourselves; the client validates the result against its own schema anyway.
+ */
+async function callGroqModel(system: string, user: string, model: string, strictJson = true): Promise<ProviderResult> {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${process.env.GROQ_API_KEY}` },
@@ -121,18 +133,27 @@ async function callGroqModel(system: string, user: string, model: string): Promi
     body: JSON.stringify({
       model,
       temperature: 0.2,
-      response_format: { type: "json_object" },
+      ...(strictJson ? { response_format: { type: "json_object" } } : {}),
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
       ],
     }),
   });
-  if (!res.ok) return fail("groq", res);
+  if (!res.ok) {
+    try {
+      return await fail("groq", res);
+    } catch (e) {
+      if (strictJson && e instanceof ProviderError && e.status === 400 && /validate json/i.test(e.reason ?? "")) {
+        return callGroqModel(system, user, model, false);
+      }
+      throw e;
+    }
+  }
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  const text = data.choices?.[0]?.message?.content ?? "";
-  if (!text) throw new ProviderError("groq", 502, false);
-  return { text, provider: "groq", model, rate: rateInfo(res) };
+  const content = data.choices?.[0]?.message?.content ?? "";
+  if (!content) throw new ProviderError("groq", 502, false);
+  return { text: strictJson ? content : extractJson(content), provider: "groq", model, rate: rateInfo(res) };
 }
 
 /** Tries each Groq model in turn when one is rate limited (429) or missing (404). Other errors stop the chain. */

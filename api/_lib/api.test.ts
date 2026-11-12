@@ -187,6 +187,39 @@ describe("providers", () => {
     }
   });
 
+  it("retries a Groq JSON-validation 400 without strict mode and extracts the JSON", async () => {
+    const { generate, extractJson } = await import("./providers");
+    const { vi } = await import("vitest");
+    const saved = { g: process.env.GROQ_API_KEY, m: process.env.GROQ_MODELS, k: process.env.GEMINI_API_KEY };
+    process.env.GROQ_API_KEY = "test-key";
+    process.env.GROQ_MODELS = "only";
+    delete process.env.GEMINI_API_KEY;
+    const bodies: Record<string, unknown>[] = [];
+    vi.stubGlobal("fetch", async (_u: string, init: { body: string }) => {
+      const body = JSON.parse(init.body) as Record<string, unknown>;
+      bodies.push(body);
+      if (body.response_format) {
+        return new Response(JSON.stringify({ error: { message: "Failed to validate JSON. See 'failed_generation'." } }), { status: 400 });
+      }
+      return new Response(JSON.stringify({ choices: [{ message: { content: 'Sure!\n```json\n{"cards":[1,2]}\n```' } }] }), { status: 200 });
+    });
+    try {
+      const res = await generate("s", "u", "P2");
+      expect(bodies).toHaveLength(2);
+      expect(bodies[0].response_format).toBeDefined();
+      expect(bodies[1].response_format).toBeUndefined();
+      expect(JSON.parse(res.text)).toEqual({ cards: [1, 2] });
+    } finally {
+      vi.unstubAllGlobals();
+      for (const [k, v] of [["GROQ_API_KEY", saved.g], ["GROQ_MODELS", saved.m], ["GEMINI_API_KEY", saved.k]] as const) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
+    expect(extractJson('text {"a":1} more')).toBe('{"a":1}');
+    expect(extractJson("no json here")).toBe("no json here");
+  });
+
   it("skips a provider for ten minutes after a 403, but not after a 429 or 500", async () => {
     const { isDisabled, noteFailure } = await import("./providers");
     const t = Date.now() + 3_600_000; // well after any earlier test marked a provider disabled

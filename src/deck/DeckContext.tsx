@@ -23,6 +23,9 @@ export interface BuildState {
   sections: SectionBuild[];
 }
 
+/** How long a failed section waits before its one automatic retry. */
+const AUTO_RETRY_DELAY_MS = 20_000;
+
 const FAILURE_TEXT: Record<AiFailureKind, string> = {
   rate_limited: "The AI hit its free limit. Try this section again in a minute.",
   not_configured: "The AI isn't set up on this server.",
@@ -83,22 +86,33 @@ export function DeckProvider({ children }: { children: ReactNode }) {
       if (!input || !section) return;
       const live = () => runId.current === myRun;
 
-      patchSection(sectionId, { status: "writing", error: undefined });
-      try {
-        const result = await buildSection(section, input.pageTexts, (stage) => live() && patchSection(sectionId, { status: stage }));
-        if (!live()) return;
-        cardsRef.current.set(sectionId, result.cards);
-        patchSection(sectionId, {
-          status: "ready",
-          cards: result.cards.length,
-          flagged: result.cards.filter((c) => !c.in_source).length,
-          unchecked: result.unchecked,
-        });
-        setDeck(assembleDeck(input, cardsRef.current));
-      } catch (e) {
-        if (!live()) return;
-        const kind: AiFailureKind = e instanceof AiFailure ? e.kind : "unavailable";
-        patchSection(sectionId, { status: "failed", error: FAILURE_TEXT[kind] });
+      // One automatic second try after a pause: free-tier limits usually clear within a minute.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        patchSection(sectionId, { status: "writing", error: undefined });
+        try {
+          const result = await buildSection(section, input.pageTexts, (stage) => live() && patchSection(sectionId, { status: stage }));
+          if (!live()) return;
+          cardsRef.current.set(sectionId, result.cards);
+          patchSection(sectionId, {
+            status: "ready",
+            cards: result.cards.length,
+            flagged: result.cards.filter((c) => !c.in_source).length,
+            unchecked: result.unchecked,
+          });
+          setDeck(assembleDeck(input, cardsRef.current));
+          break;
+        } catch (e) {
+          if (!live()) return;
+          const kind: AiFailureKind = e instanceof AiFailure ? e.kind : "unavailable";
+          if (attempt === 0 && kind !== "not_configured") {
+            patchSection(sectionId, { status: "waiting" });
+            await new Promise((resolve) => setTimeout(resolve, AUTO_RETRY_DELAY_MS));
+            if (!live()) return;
+            continue;
+          }
+          patchSection(sectionId, { status: "failed", error: FAILURE_TEXT[kind] });
+          break;
+        }
       }
       finishIfDone(myRun);
     },
