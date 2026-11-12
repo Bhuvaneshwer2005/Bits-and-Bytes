@@ -128,6 +128,9 @@ export default function Home() {
       <button type="button" className="btn btn--primary" onClick={tryTheSampleDeck}>
         Try the sample deck
       </button>
+      <a className="btn" href="/sample-thermodynamics-notes.pdf" download>
+        Download a sample PDF to try the upload
+      </a>
 
       <p className="muted">
         Your PDF stays on your device. Only its text is sent to a free AI service to write the cards, and that service may keep or

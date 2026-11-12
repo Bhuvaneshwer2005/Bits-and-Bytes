@@ -115,6 +115,104 @@
       "edited_by_user": false
     },
     {
+      "id": "c13",
+      "section_id": "s1",
+      "type": "qa",
+      "front": "What does a thermometer measure?",
+      "back": "Temperature.",
+      "say_front": "What does a thermometer measure?",
+      "say_back": "Temperature.",
+      "source_page": 1,
+      "source_quote": "Temperature is what a thermometer measures",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
+      "id": "c14",
+      "section_id": "s1",
+      "type": "term",
+      "front": "Heat",
+      "back": "Energy that flows from a hotter body to a colder one.",
+      "say_front": "What is heat?",
+      "say_back": "Energy that flows from a hotter body to a colder one.",
+      "source_page": 1,
+      "source_quote": "Heat is energy that flows from a hotter body to a colder one",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
+      "id": "c15",
+      "section_id": "s1",
+      "type": "term",
+      "front": "Closed system",
+      "back": "A system that exchanges energy but not matter with its surroundings.",
+      "say_front": "What is a closed system?",
+      "say_back": "A system that exchanges energy but not matter with its surroundings.",
+      "source_page": 2,
+      "source_quote": "A closed system exchanges energy but not matter",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
+      "id": "c16",
+      "section_id": "s1",
+      "type": "term",
+      "front": "Open system",
+      "back": "A system that exchanges both matter and energy.",
+      "say_front": "What is an open system?",
+      "say_back": "A system that exchanges both matter and energy.",
+      "source_page": 2,
+      "source_quote": "An open system exchanges both matter and energy",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
+      "id": "c17",
+      "section_id": "s1",
+      "type": "qa",
+      "front": "Which way does heat flow when no work is done?",
+      "back": "From hot to cold.",
+      "say_front": "Which way does heat flow when no work is done?",
+      "say_back": "From hot to cold.",
+      "source_page": 3,
+      "source_quote": "Heat flows spontaneously from hot to cold",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
+      "id": "c18",
+      "section_id": "s1",
+      "type": "term",
+      "front": "Reversible process",
+      "back": "An idealised process in which the entropy stays constant.",
+      "say_front": "What is a reversible process?",
+      "say_back": "An idealised process in which the entropy stays constant.",
+      "source_page": 3,
+      "source_quote": "A reversible process is an idealisation in which the entropy stays constant",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
+      "id": "c19",
+      "section_id": "s1",
+      "type": "qa",
+      "front": "What is absolute zero in degrees Celsius?",
+      "back": "Minus 273.15 degrees Celsius, or 0 kelvin.",
+      "say_front": "What is absolute zero in degrees Celsius?",
+      "say_back": "Minus two hundred seventy-three point one five degrees Celsius, or zero kelvin.",
+      "source_page": 3,
+      "source_quote": "minus 273.15 degrees Celsius",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
       "id": "c7",
       "section_id": "s2",
       "type": "term",
@@ -197,6 +295,76 @@
       "quote_found": false,
       "in_source": false,
       "check_reason": "The notes do not discuss real engines, so this answer goes beyond the page.",
+      "edited_by_user": false
+    },
+    {
+      "id": "c20",
+      "section_id": "s2",
+      "type": "qa",
+      "front": "What units is entropy measured in?",
+      "back": "Joules per kelvin.",
+      "say_front": "What units is entropy measured in?",
+      "say_back": "Joules per kelvin.",
+      "source_page": 4,
+      "source_quote": "Entropy is measured in joules per kelvin",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
+      "id": "c21",
+      "section_id": "s2",
+      "type": "qa",
+      "front": "Does ice melting increase or decrease entropy?",
+      "back": "It increases entropy.",
+      "say_front": "Does ice melting increase or decrease entropy?",
+      "say_back": "It increases entropy.",
+      "source_page": 4,
+      "source_quote": "Ice melting increases entropy",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
+      "id": "c22",
+      "section_id": "s2",
+      "type": "qa",
+      "front": "How is the efficiency of a heat engine worked out?",
+      "back": "The work done divided by the heat taken from the hot reservoir.",
+      "say_front": "How is the efficiency of a heat engine worked out?",
+      "say_back": "The work done divided by the heat taken from the hot reservoir.",
+      "source_page": 5,
+      "source_quote": "work done divided by the heat taken from the hot reservoir",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
+      "id": "c23",
+      "section_id": "s2",
+      "type": "cloze",
+      "front": "Car engines and power stations are ____ engines.",
+      "back": "heat",
+      "say_front": "Car engines and power stations are what kind of engine?",
+      "say_back": "Heat engines.",
+      "source_page": 5,
+      "source_quote": "Car engines and power stations are heat engines",
+      "quote_found": true,
+      "in_source": true,
+      "edited_by_user": false
+    },
+    {
+      "id": "c24",
+      "section_id": "s2",
+      "type": "qa",
+      "front": "What is a refrigerator, in heat-engine terms?",
+      "back": "A heat engine run backwards, using work to move heat from cold to hot.",
+      "say_front": "What is a refrigerator, in heat engine terms?",
+      "say_back": "A heat engine run backwards, using work to move heat from cold to hot.",
+      "source_page": 6,
+      "source_quote": "A refrigerator is a heat engine run backwards",
+      "quote_found": true,
+      "in_source": true,
       "edited_by_user": false
     }
   ],
@@ -359,6 +527,182 @@
       "answer_index": 0,
       "explanation": "It is one minus the cold temperature divided by the hot temperature, in kelvin.",
       "source_page": 6
+    },
+    {
+      "id": "q12",
+      "card_id": "c13",
+      "type": "mcq",
+      "prompt": "What does a thermometer measure?",
+      "options": [
+        "Heat",
+        "Temperature",
+        "Energy",
+        "Entropy"
+      ],
+      "answer_index": 1,
+      "explanation": "A thermometer measures temperature, not heat.",
+      "source_page": 1
+    },
+    {
+      "id": "q13",
+      "card_id": "c14",
+      "type": "tf",
+      "prompt": "Heat is energy that flows from a colder body to a hotter one on its own.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 1,
+      "explanation": "Heat flows from a hotter body to a colder one.",
+      "source_page": 1
+    },
+    {
+      "id": "q14",
+      "card_id": "c15",
+      "type": "mcq",
+      "prompt": "A closed system exchanges which of these with its surroundings?",
+      "options": [
+        "Matter only",
+        "Both matter and energy",
+        "Energy but not matter",
+        "Neither matter nor energy"
+      ],
+      "answer_index": 2,
+      "explanation": "A closed system exchanges energy but not matter.",
+      "source_page": 2
+    },
+    {
+      "id": "q15",
+      "card_id": "c16",
+      "type": "mcq",
+      "prompt": "Which system exchanges both matter and energy?",
+      "options": [
+        "Open system",
+        "Closed system",
+        "Isolated system",
+        "Perfect crystal"
+      ],
+      "answer_index": 0,
+      "explanation": "An open system exchanges both matter and energy.",
+      "source_page": 2
+    },
+    {
+      "id": "q16",
+      "card_id": "c17",
+      "type": "mcq",
+      "prompt": "With no work done, heat flows spontaneously from:",
+      "options": [
+        "Cold to hot",
+        "Hot to cold",
+        "High pressure to low pressure",
+        "Low entropy to high entropy"
+      ],
+      "answer_index": 1,
+      "explanation": "Heat flows spontaneously from hot to cold.",
+      "source_page": 3
+    },
+    {
+      "id": "q17",
+      "card_id": "c18",
+      "type": "cloze",
+      "prompt": "In a reversible process the entropy stays ____.",
+      "options": [
+        "constant",
+        "zero",
+        "doubled",
+        "negative"
+      ],
+      "answer_index": 0,
+      "explanation": "A reversible process is an idealisation in which the entropy stays constant.",
+      "source_page": 3
+    },
+    {
+      "id": "q18",
+      "card_id": "c19",
+      "type": "mcq",
+      "prompt": "Absolute zero is about:",
+      "options": [
+        "0 degrees Celsius",
+        "-100 degrees Celsius",
+        "-273.15 degrees Celsius",
+        "-459 kelvin"
+      ],
+      "answer_index": 2,
+      "explanation": "Absolute zero is 0 kelvin, or minus 273.15 degrees Celsius.",
+      "source_page": 3
+    },
+    {
+      "id": "q19",
+      "card_id": "c20",
+      "type": "mcq",
+      "prompt": "Entropy is measured in:",
+      "options": [
+        "Joules",
+        "Kelvin",
+        "Joules per kelvin",
+        "Watts"
+      ],
+      "answer_index": 2,
+      "explanation": "Entropy is measured in joules per kelvin.",
+      "source_page": 4
+    },
+    {
+      "id": "q20",
+      "card_id": "c21",
+      "type": "tf",
+      "prompt": "Ice melting decreases entropy.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 1,
+      "explanation": "Melting ice increases entropy.",
+      "source_page": 4
+    },
+    {
+      "id": "q21",
+      "card_id": "c22",
+      "type": "mcq",
+      "prompt": "Heat engine efficiency is the work done divided by:",
+      "options": [
+        "The heat rejected to the cold reservoir",
+        "The heat taken from the hot reservoir",
+        "The temperature difference",
+        "The entropy change"
+      ],
+      "answer_index": 1,
+      "explanation": "Efficiency is the work done divided by the heat taken from the hot reservoir.",
+      "source_page": 5
+    },
+    {
+      "id": "q22",
+      "card_id": "c23",
+      "type": "cloze",
+      "prompt": "Car engines and power stations are ____ engines.",
+      "options": [
+        "heat",
+        "cold",
+        "reversible",
+        "isolated"
+      ],
+      "answer_index": 0,
+      "explanation": "The notes list car engines and power stations as heat engines.",
+      "source_page": 5
+    },
+    {
+      "id": "q23",
+      "card_id": "c24",
+      "type": "mcq",
+      "prompt": "In heat-engine terms, a refrigerator is:",
+      "options": [
+        "A perfect Carnot engine",
+        "An isolated system",
+        "A heat engine run backwards",
+        "A reversible heat engine"
+      ],
+      "answer_index": 2,
+      "explanation": "A refrigerator uses work to move heat from cold to hot, so it is a heat engine run backwards.",
+      "source_page": 6
     }
   ],
   "summary": {
@@ -366,16 +710,16 @@
       {
         "section_id": "s1",
         "bullets": [
-          "Zeroth law: equal temperature means thermal equilibrium.",
+          "Zeroth law: systems in equilibrium with a third are in equilibrium with each other.",
           "First law: energy is conserved, only transferred or converted.",
-          "Second law: entropy of an isolated system never decreases.",
+          "Second law: entropy of an isolated system never decreases; heat flows hot to cold.",
           "Third law: entropy of a perfect crystal tends to zero at absolute zero."
         ]
       },
       {
         "section_id": "s2",
         "bullets": [
-          "Entropy measures the disorder of a system.",
+          "Entropy measures disorder and is measured in joules per kelvin.",
           "A heat engine turns heat into work between a hot and a cold reservoir.",
           "No engine is 100% efficient because some heat is always rejected.",
           "Carnot efficiency is 1 minus Tc over Th, in kelvin."
@@ -390,6 +734,22 @@
       {
         "term": "Isolated system",
         "meaning": "Exchanges neither matter nor energy."
+      },
+      {
+        "term": "Closed system",
+        "meaning": "Exchanges energy but not matter."
+      },
+      {
+        "term": "Open system",
+        "meaning": "Exchanges both matter and energy."
+      },
+      {
+        "term": "Heat",
+        "meaning": "Energy flowing from a hotter to a colder body."
+      },
+      {
+        "term": "Reversible process",
+        "meaning": "An idealised process with constant entropy."
       },
       {
         "term": "Heat engine",

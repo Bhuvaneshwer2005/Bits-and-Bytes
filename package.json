@@ -1,6 +1,6 @@
 {
   "name": "study-deck",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Notes PDF to spoken flashcards, quiz and cheat sheet",
   "scripts": {
     "dev": "vite",

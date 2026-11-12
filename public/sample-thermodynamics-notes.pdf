@@ -1,0 +1,167 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Length 421 >>
+stream
+BT
+/F2 16 Tf
+50 790 Td
+(Thermodynamics basics - page 1) Tj
+/F1 12 Tf
+0 -30 Td
+18 TL
+(Zeroth law of thermodynamics. If two systems are each in thermal equilibrium) '
+(with a third system, they are in thermal equilibrium with each other. Two) '
+(systems in thermal equilibrium have the same temperature. Temperature is what a) '
+(thermometer measures. Heat is energy that flows from a hotter body to a colder) '
+(one.) '
+ET
+endstream
+endobj
+4 0 obj
+<< /Length 468 >>
+stream
+BT
+/F2 16 Tf
+50 790 Td
+(Thermodynamics basics - page 2) Tj
+/F1 12 Tf
+0 -30 Td
+18 TL
+(First law of thermodynamics. Energy cannot be created or destroyed, only) '
+(transferred or converted. The change in internal energy equals the heat added) '
+(minus the work done by the system. An isolated system exchanges neither matter) '
+(nor energy with its surroundings. A closed system exchanges energy but not) '
+(matter. An open system exchanges both matter and energy.) '
+ET
+endstream
+endobj
+5 0 obj
+<< /Length 576 >>
+stream
+BT
+/F2 16 Tf
+50 790 Td
+(Thermodynamics basics - page 3) Tj
+/F1 12 Tf
+0 -30 Td
+18 TL
+(Second law of thermodynamics. The entropy of an isolated system never decreases.) '
+(Heat flows spontaneously from hot to cold, never the other way without work. A) '
+(reversible process is an idealisation in which the entropy stays constant. Third) '
+(law of thermodynamics. As temperature approaches absolute zero, the entropy of a) '
+(perfect crystal approaches zero. Absolute zero is 0 kelvin, or minus 273.15) '
+(degrees Celsius, and cannot be reached in a finite number of steps.) '
+ET
+endstream
+endobj
+6 0 obj
+<< /Length 360 >>
+stream
+BT
+/F2 16 Tf
+50 790 Td
+(Thermodynamics basics - page 4) Tj
+/F1 12 Tf
+0 -30 Td
+18 TL
+(Entropy. Entropy is a measure of the disorder of a system, or the number of) '
+(microscopic arrangements that match its overall state. Ice melting increases) '
+(entropy. A gas expanding into a vacuum also increases entropy. Entropy is) '
+(measured in joules per kelvin.) '
+ET
+endstream
+endobj
+7 0 obj
+<< /Length 461 >>
+stream
+BT
+/F2 16 Tf
+50 790 Td
+(Thermodynamics basics - page 5) Tj
+/F1 12 Tf
+0 -30 Td
+18 TL
+(Heat engines. A heat engine turns heat into work by moving heat from a hot) '
+(reservoir to a cold reservoir. Car engines and power stations are heat engines.) '
+(Efficiency is the work done divided by the heat taken from the hot reservoir.) '
+(Some heat must be rejected to the cold reservoir, as required by the second law,) '
+(so no heat engine can be 100% efficient.) '
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 458 >>
+stream
+BT
+/F2 16 Tf
+50 790 Td
+(Thermodynamics basics - page 6) Tj
+/F1 12 Tf
+0 -30 Td
+18 TL
+(Carnot efficiency. Carnot efficiency is the maximum efficiency of a heat engine) '
+(between two reservoirs: 1 - Tc/Th, where Tc is the cold temperature and Th is) '
+(the hot temperature. All temperatures must be in kelvin. Real engines always) '
+(fall short of this limit. A refrigerator is a heat engine run backwards: it uses) '
+(work to move heat from cold to hot.) '
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 15 0 R /MediaBox [0 0 595 842] /Contents 3 0 R /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> >>
+endobj
+10 0 obj
+<< /Type /Page /Parent 15 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> >>
+endobj
+11 0 obj
+<< /Type /Page /Parent 15 0 R /MediaBox [0 0 595 842] /Contents 5 0 R /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> >>
+endobj
+12 0 obj
+<< /Type /Page /Parent 15 0 R /MediaBox [0 0 595 842] /Contents 6 0 R /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> >>
+endobj
+13 0 obj
+<< /Type /Page /Parent 15 0 R /MediaBox [0 0 595 842] /Contents 7 0 R /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> >>
+endobj
+14 0 obj
+<< /Type /Page /Parent 15 0 R /MediaBox [0 0 595 842] /Contents 8 0 R /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> >>
+endobj
+15 0 obj
+<< /Type /Pages /Count 6 /Kids [9 0 R 10 0 R 11 0 R 12 0 R 13 0 R 14 0 R] >>
+endobj
+16 0 obj
+<< /Title (Thermodynamics basics (sample notes)) >>
+endobj
+17 0 obj
+<< /Type /Catalog /Pages 15 0 R /Lang (en-US) >>
+endobj
+xref
+0 18
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000000154 00000 n 
+0000000626 00000 n 
+0000001145 00000 n 
+0000001772 00000 n 
+0000002183 00000 n 
+0000002695 00000 n 
+0000003204 00000 n 
+0000003341 00000 n 
+0000003479 00000 n 
+0000003617 00000 n 
+0000003755 00000 n 
+0000003893 00000 n 
+0000004031 00000 n 
+0000004124 00000 n 
+0000004192 00000 n 
+trailer
+<< /Size 18 /Root 17 0 R /Info 16 0 R >>
+startxref
+4257
+%%EOF
