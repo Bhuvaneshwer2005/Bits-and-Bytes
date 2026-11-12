@@ -258,6 +258,12 @@ p {
   font: inherit;
 }
 
+textarea.field {
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  line-height: 1.4;
+}
+
 .steps {
   list-style: none;
   margin: 0;

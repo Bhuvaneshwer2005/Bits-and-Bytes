@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { DeckProvider } from "./deck/DeckContext";
 import Build from "./screens/Build";
+import EditCard from "./screens/EditCard";
 import Home from "./screens/Home";
 import OutlineView from "./screens/OutlineView";
 import Player from "./screens/Player";
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/outline/:key" element={<OutlineView />} />
             <Route path="/deck" element={<DeckOverview />} />
             <Route path="/player" element={<Player />} />
+            <Route path="/edit/:cardId" element={<EditCard />} />
             <Route path="/quiz" element={<Quiz />} />
             <Route path="/results" element={<Results />} />
             <Route path="*" element={<Placeholder title="Page not found" arrivesIn="never, check the address" />} />

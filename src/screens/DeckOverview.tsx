@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import CheatSheetButton from "../components/CheatSheetButton";
+import EditLogPanel from "../components/EditLogPanel";
 import { useDeck } from "../deck/DeckContext";
 
 export default function DeckOverview() {
@@ -106,11 +107,16 @@ export default function DeckOverview() {
                 <span className="muted">
                   Page {c.source_page} · {c.check_reason ?? "Could not be confirmed from the page."}
                 </span>
+                <Link to={`/edit/${c.id}`} className="btn">
+                  Edit this card
+                </Link>
               </li>
             ))}
           </ul>
         </section>
       )}
+
+      <EditLogPanel />
 
       {quizPending && (
         <p className="muted" role="status">

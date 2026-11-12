@@ -123,6 +123,36 @@ describe("P5 (cheat sheet)", () => {
   });
 });
 
+describe("P6 (regenerate a card)", () => {
+  const base = {
+    card: { id: "s1c2", type: "term", front: "Entropy", back: "Disorder." },
+    section: { id: "s1", title: "Laws" },
+    page: { page: 3, text: "Entropy is a measure of disorder." },
+    note: "too vague",
+  };
+
+  it("accepts a valid request, with or without a note", () => {
+    expect(cleanInputs("P6", base)).not.toBeNull();
+    expect(cleanInputs("P6", { ...base, note: undefined })).not.toBeNull();
+  });
+
+  it("rejects a missing page, a bad type or a missing card", () => {
+    expect(cleanInputs("P6", { ...base, page: undefined })).toBeNull();
+    expect(cleanInputs("P6", { ...base, card: { ...base.card, type: "essay" } })).toBeNull();
+    expect(cleanInputs("P6", { ...base, card: undefined })).toBeNull();
+    expect(cleanInputs("P6", { ...base, note: 5 })).toBeNull();
+  });
+
+  it("builds a prompt that confines the model to one page and carries the learner's note", () => {
+    const { system, user } = buildPrompt(cleanInputs("P6", base)!);
+    expect(system).toContain("Step 6 of 6");
+    expect(system).toContain("only the text of page 3");
+    expect(system).toContain("too vague");
+    expect(system).toContain("untrusted data");
+    expect(user).toContain("[page 3] Entropy is a measure of disorder.");
+  });
+});
+
 describe("buildPrompt", () => {
   it("P1 names the page span, tells the model the PDF text is untrusted, and lists the pages", () => {
     const { system, user } = buildPrompt(cleanInputs("P1", { pages: [{ page: 4, text: "alpha" }, { page: 5, text: "beta" }] })!);

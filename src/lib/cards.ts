@@ -102,6 +102,35 @@ export function buildCards(input: unknown, section: Section, pageTexts: Map<numb
   });
 }
 
+const p6Schema = z.object({ card: rawCard });
+
+/**
+ * Validates P6's rewrite of one card. The id and section stay the same, the page must be the old card's page,
+ * and the quote is checked against that page's text in code. Throws CardsError if it is unusable.
+ */
+export function parseRegeneratedCard(input: unknown, old: Card, pageText: string): Card {
+  const parsed = p6Schema.safeParse(input);
+  if (!parsed.success) throw new CardsError("card does not match the schema");
+  const c = parsed.data.card;
+  if (c.source_page !== old.source_page) throw new CardsError("card points at a different page");
+  const found = quoteInPage(c.source_quote, pageText);
+  return {
+    id: old.id,
+    section_id: old.section_id,
+    type: c.type,
+    front: c.front.trim(),
+    back: c.back.trim(),
+    say_front: c.say_front.trim() || spokenFallback(c.front),
+    say_back: c.say_back.trim() || spokenFallback(c.back),
+    source_page: old.source_page,
+    source_quote: c.source_quote.trim(),
+    quote_found: found,
+    in_source: found,
+    check_reason: found ? undefined : "We couldn't find this quote on the page.",
+    edited_by_user: true,
+  };
+}
+
 /** Validates P3's output. Throws CardsError if it is malformed. */
 export function parseChecks(input: unknown): Map<string, { in_source: boolean; reason?: string }> {
   const parsed = p3Schema.safeParse(input);

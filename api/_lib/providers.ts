@@ -197,6 +197,22 @@ function callMock(user: string, promptId: PromptId): ProviderResult {
     });
   }
 
+  if (promptId === "P6") {
+    const m = /\[page (\d+)\] ([^\n]*)/.exec(user);
+    const words = (m?.[2] ?? "").split(" ").filter(Boolean);
+    return done({
+      card: {
+        type: "term",
+        front: `Mock regenerated: what comes after "${words.slice(0, 3).join(" ")}"?`,
+        back: words.slice(3, 10).join(" "),
+        say_front: "",
+        say_back: "",
+        source_page: Number(m?.[1] ?? 1),
+        source_quote: words.slice(0, 8).join(" "),
+      },
+    });
+  }
+
   if (promptId === "P5") {
     const sections = JSON.parse(user.slice(user.indexOf("[")).trim()) as { id: string; cards: { front: string; back: string }[] }[];
     return done({

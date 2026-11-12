@@ -10,6 +10,10 @@ import {
   withSectionQuiz,
   type BuildInput,
 } from "../lib/deckBuild";
+import { addEdit, type EditAction } from "../lib/editLog";
+import { buildCardQuestion, regenerateCard as regenerateOne, removeCard, replaceCard, replaceCardQuestions } from "../lib/cardEdit";
+import { sha256Hex } from "../lib/hash";
+import { extractPdfText } from "../lib/pdf";
 import { buildCheatSheet, saveFile } from "../lib/cheatSheet";
 import { localDate } from "../lib/dates";
 import { loadRecent, outlineKey, saveDeck } from "../lib/storage";
@@ -75,6 +79,15 @@ interface DeckState {
   cheatSheet: CheatSheetState;
   /** Makes the one-page PDF from the deck as it is now and hands it to the browser. */
   downloadCheatSheet: () => Promise<void>;
+  /** True when the PDF's page text is in memory, which regenerating a card needs. */
+  sourceReady: boolean;
+  /** Reads the original PDF again (nothing is uploaded or stored) so cards can be regenerated. */
+  attachSourcePdf: (file: File) => Promise<"ok" | "mismatch" | "unreadable">;
+  /** Asks the AI for a better version of a card. Returns it for review; nothing changes until commitCard. */
+  regenerateCard: (cardId: string, note: string) => Promise<Card>;
+  /** Saves a changed card, logs it, and rebuilds its quiz question in the background. */
+  commitCard: (card: Card, action: Exclude<EditAction, "delete">, note?: string) => void;
+  deleteCard: (cardId: string) => void;
 }
 
 const DeckContext = createContext<DeckState | null>(null);
@@ -85,6 +98,7 @@ export function DeckProvider({ children }: { children: ReactNode }) {
   const [build, setBuild] = useState<BuildState | null>(null);
   const [quizStatus, setQuizStatus] = useState<Record<string, QuizStatus>>({});
   const [cheatSheet, setCheatSheet] = useState<CheatSheetState>({ busy: false });
+  const [sourceHash, setSourceHash] = useState<string | null>(null);
 
   // The running build, kept in refs so retries and late results always see the latest data.
   const deckRef = useRef<Deck | null>(null);
@@ -93,6 +107,7 @@ export function DeckProvider({ children }: { children: ReactNode }) {
   const quizRef = useRef<Map<string, Question[]>>(new Map());
   const pendingQuiz = useRef(0);
   const runId = useRef(0);
+  const sourceTexts = useRef<Map<number, string> | null>(null);
   /** P5 in flight, so a build that finishes and a download that starts share one call. */
   const summaryJob = useRef<Promise<void> | null>(null);
   const prepareSummaryRef = useRef<() => Promise<void>>(() => Promise.resolve());
@@ -215,6 +230,8 @@ export function DeckProvider({ children }: { children: ReactNode }) {
     (input: BuildInput) => {
       const myRun = ++runId.current;
       inputRef.current = input;
+      sourceTexts.current = input.pageTexts;
+      setSourceHash(input.hash);
       cardsRef.current = new Map();
       quizRef.current = new Map();
       pendingQuiz.current = 0;
@@ -297,10 +314,103 @@ export function DeckProvider({ children }: { children: ReactNode }) {
     }
   }, [prepareSummary]);
 
+  /** Keeps a running build's own copies in step with edits, so a late section cannot bring a deleted card back. */
+  const syncBuildRefs = useCallback(() => {
+    const d = deckRef.current;
+    if (!d) return;
+    for (const id of cardsRef.current.keys()) {
+      const cards = d.cards.filter((c) => c.section_id === id);
+      cardsRef.current.set(id, cards);
+      if (quizRef.current.has(id)) {
+        const ids = new Set(cards.map((c) => c.id));
+        quizRef.current.set(id, d.quiz.filter((q) => ids.has(q.card_id)));
+      }
+    }
+  }, []);
+
+  const attachSourcePdf = useCallback(async (file: File): Promise<"ok" | "mismatch" | "unreadable"> => {
+    const d = deckRef.current;
+    if (!d) return "unreadable";
+    try {
+      const data = await file.arrayBuffer();
+      if ((await sha256Hex(data)) !== d.meta.file_hash) return "mismatch";
+      const { pages } = await extractPdfText(data);
+      sourceTexts.current = new Map(pages.map((text, i) => [i + 1, text]));
+      setSourceHash(d.meta.file_hash);
+      return "ok";
+    } catch {
+      return "unreadable";
+    }
+  }, []);
+
+  const regenerateCard = useCallback(async (cardId: string, note: string): Promise<Card> => {
+    const d = deckRef.current;
+    const card = d?.cards.find((c) => c.id === cardId);
+    const section = d?.sections.find((s) => s.id === card?.section_id);
+    const pageText = card ? sourceTexts.current?.get(card.source_page) : undefined;
+    if (!d || !card || !section || !pageText) throw new AiFailure("unavailable");
+    return regenerateOne(card, section, pageText, note);
+  }, []);
+
+  const commitCard = useCallback(
+    (card: Card, action: Exclude<EditAction, "delete">, note?: string) => {
+      const d = deckRef.current;
+      const old = d?.cards.find((c) => c.id === card.id);
+      if (!d || !old) return;
+      addEdit({
+        at: new Date().toISOString(),
+        deck: d.meta.title,
+        card_id: card.id,
+        action,
+        before: { front: old.front, back: old.back },
+        after: { front: card.front, back: card.back },
+        note: note?.trim() || undefined,
+      });
+      const myRun = runId.current;
+      // The old question was about the old wording, so it goes now and a new one is written in the background.
+      applyDeck((cur) => (cur ? replaceCardQuestions(replaceCard(cur, card), card.id, []) : cur));
+      syncBuildRefs();
+      saveCurrent();
+      const section = deckRef.current?.sections.find((s) => s.id === card.section_id);
+      const siblings = deckRef.current?.cards.filter((c) => c.section_id === card.section_id) ?? [];
+      if (!section) return;
+      void buildCardQuestion(card, section, siblings)
+        .then((questions) => {
+          if (runId.current !== myRun || questions.length === 0) return;
+          applyDeck((cur) => (cur?.cards.some((c) => c.id === card.id) ? replaceCardQuestions(cur, card.id, questions) : cur));
+          syncBuildRefs();
+          saveCurrent();
+        })
+        .catch(() => undefined);
+    },
+    [applyDeck, saveCurrent, syncBuildRefs],
+  );
+
+  const deleteCard = useCallback(
+    (cardId: string) => {
+      const d = deckRef.current;
+      const old = d?.cards.find((c) => c.id === cardId);
+      if (!d || !old) return;
+      addEdit({
+        at: new Date().toISOString(),
+        deck: d.meta.title,
+        card_id: cardId,
+        action: "delete",
+        before: { front: old.front, back: old.back },
+      });
+      applyDeck((cur) => (cur ? removeCard(cur, cardId) : cur));
+      syncBuildRefs();
+      saveCurrent();
+    },
+    [applyDeck, saveCurrent, syncBuildRefs],
+  );
+
   const openAndReset = useCallback(
     (d: Deck) => {
       runId.current++; // abandon any build in progress
       summaryJob.current = null;
+      sourceTexts.current = null;
+      setSourceHash(null);
       setCheatSheet({ busy: false });
       inputRef.current = null;
       cardsRef.current = new Map();
@@ -327,8 +437,13 @@ export function DeckProvider({ children }: { children: ReactNode }) {
       prepareQuiz,
       cheatSheet,
       downloadCheatSheet,
+      sourceReady: sourceHash !== null && sourceHash === deck?.meta.file_hash,
+      attachSourcePdf,
+      regenerateCard,
+      commitCard,
+      deleteCard,
     }),
-    [deck, pendingFile, build, startBuild, retrySection, quizStatus, prepareQuiz, cheatSheet, downloadCheatSheet, openAndReset],
+    [deck, pendingFile, build, startBuild, retrySection, quizStatus, prepareQuiz, cheatSheet, downloadCheatSheet, sourceHash, attachSourcePdf, regenerateCard, commitCard, deleteCard, openAndReset],
   );
 
   return <DeckContext.Provider value={value}>{children}</DeckContext.Provider>;

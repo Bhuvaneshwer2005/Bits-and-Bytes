@@ -277,6 +277,13 @@ function PlayerScreen({ deck }: { deck: Deck }) {
         <span className="muted">{flipped ? "Tap to see the question" : "Tap to see the answer"}</span>
       </button>
 
+      <div className="row">
+        {card.edited_by_user && <span className="pill pill--accent">Edited by you</span>}
+        <Link to={`/edit/${card.id}`} className="btn">
+          Edit card
+        </Link>
+      </div>
+
       {!card.in_source && (
         <p className="notice" role="status">
           Check this card: {card.check_reason ?? "it could not be confirmed from the page."}

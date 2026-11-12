@@ -1,7 +1,7 @@
 // Runtime prompts. Source of truth: Part E of docs/route-and-prompt-sheet.md.
 // The server builds the prompt from an allow-listed id so nobody can use /api/ai as a free general chatbot.
 
-export type PromptId = "P1" | "P2" | "P3" | "P4" | "P5";
+export type PromptId = "P1" | "P2" | "P3" | "P4" | "P5" | "P6";
 
 export interface Page {
   page: number;
@@ -35,12 +35,21 @@ export interface P5Inputs {
   sections: { id: string; title: string; cards: { front: string; back: string }[] }[];
 }
 
+export interface P6Inputs {
+  card: { id: string; type: string; front: string; back: string };
+  section: { id: string; title: string };
+  page: Page;
+  /** What the learner said is wrong. May be empty. */
+  note: string;
+}
+
 export type PromptInputs =
   | { id: "P1"; inputs: P1Inputs }
   | { id: "P2"; inputs: P2Inputs }
   | { id: "P3"; inputs: P3Inputs }
   | { id: "P4"; inputs: P4Inputs }
-  | { id: "P5"; inputs: P5Inputs };
+  | { id: "P5"; inputs: P5Inputs }
+  | { id: "P6"; inputs: P6Inputs };
 
 export interface BuiltPrompt {
   system: string;
@@ -141,6 +150,21 @@ export function cleanInputs(id: PromptId, raw: unknown): PromptInputs | null {
       quizCards.push({ id: cid, front, back, source_page: o.source_page as number });
     }
     return { id: "P4", inputs: { section: { id: sid, title }, cards: quizCards, count: count as number } };
+  }
+
+  if (id === "P6") {
+    const card = r.card as Record<string, unknown> | undefined;
+    const section = r.section as { id?: unknown; title?: unknown } | undefined;
+    const pages = cleanPages(r.page ? [r.page] : null, FULL_CHARS_PER_PAGE, FULL_CHARS_PER_PAGE);
+    const cid = shortText(card?.id, 30);
+    const type = card?.type === "term" || card?.type === "qa" || card?.type === "cloze" ? card.type : null;
+    const front = shortText(card?.front, 400);
+    const back = shortText(card?.back, 600);
+    const sid = shortText(section?.id, 20);
+    const title = shortText(section?.title, 100);
+    const note = r.note === undefined ? "" : shortText(r.note, 300);
+    if (!pages || !cid || !type || !front || !back || !sid || !title || note === null) return null;
+    return { id, inputs: { card: { id: cid, type, front, back }, section: { id: sid, title }, page: pages[0], note } };
   }
 
   if (id === "P5") {
@@ -293,9 +317,31 @@ facts that are not in the cards. Use each section's id exactly as given.
 Output: {"summary":{"bullets_by_section":[{"section_id":"","bullets":[""]}],"key_terms":[{"term":"","meaning":""}]}}`;
       return { system, user: `SECTIONS:\n${JSON.stringify(sections)}` };
     }
+
+    case "P6": {
+      const { card, section, page, note } = p.inputs;
+      const system = `${routeContext({
+        n: 6,
+        name: "Regenerate one card",
+        prevName: "Cards",
+        prevSummary: "wrote this card, and the learner asked for a better version",
+        goal: "rewrite one flashcard from its source page",
+        nextName: "Grounding check",
+        nextNeeds: "the new card's source_quote, which code checks against the page before the checker compares it with the back",
+      })}
+
+Rewrite the flashcard below (section ${section.id}, ${section.title}) using only the text of page ${page.page}.
+${note ? `The learner says: "${note}"` : "The learner gave no note; make it clearer and more accurate."}
+Keep the same type (${card.type}) unless the note asks otherwise. The card tests ONE idea. Keep the front under 15 words
+and the back under 35. say_front and say_back are what a voice reads aloud: fill them ONLY where speech needs different
+wording than the text; otherwise leave them as empty strings. Set source_page to ${page.page} and give a short exact
+source_quote (under 25 words) copied character for character from that page.
+Output: {"card":{"type":"${card.type}","front":"","back":"","say_front":"","say_back":"","source_page":${page.page},"source_quote":""}}`;
+      return { system, user: `OLD CARD:\n${JSON.stringify({ front: card.front, back: card.back })}\n${pageBlock([page])}` };
+    }
   }
 }
 
 export function isPromptId(x: unknown): x is PromptId {
-  return x === "P1" || x === "P2" || x === "P3" || x === "P4" || x === "P5";
+  return x === "P1" || x === "P2" || x === "P3" || x === "P4" || x === "P5" || x === "P6";
 }
