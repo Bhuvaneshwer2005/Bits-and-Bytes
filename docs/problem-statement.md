@@ -15,10 +15,17 @@ Drop in a notes PDF. In about a minute it becomes a spoken, captioned flashcard 
 ## Why it is trustworthy
 Every card and question shows its source page. A second AI pass flags anything the PDF doesn't support. Users can edit or regenerate any card, and the app says plainly that a deck is AI-generated.
 
+## Why not just paste the notes into a chatbot?
+A chatbot gives a wall of text the student has to read and then ask about. This app does the study work for them (cards, voice, quiz, cheat sheet), asks nothing in return except tapping, and remembers their progress day to day.
+
 ## What success looks like (for the demo)
-- PDF to first playing card in about 60 seconds, or instantly with the sample deck.
+- PDF to the first playing card in well under a minute (the first section appears while the rest still builds), or instantly with the sample deck.
 - A student can finish deck + quiz in one commute (about 10 minutes).
-- Works on a phone, with captions, large text and big tap targets.
+- Works on a phone, with captions, large text and big tap targets, and the live link opens on a phone.
+- Anything the AI made can be checked (source page) and corrected (edit or regenerate).
+
+## What it is not
+No chat window, no accounts, no stored PDFs, English only, and no promise of being right: every deck is labelled AI-generated and cites its source.
 
 ## 3-minute demo outline (rubric: presentation)
 1. 20 s: the user and the pain.
