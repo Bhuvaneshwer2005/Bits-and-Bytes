@@ -7,7 +7,7 @@ export interface ProviderResult {
   provider: ProviderName;
   model: string;
   /** Providers tried before this one that failed, with their HTTP status (no keys, no text). */
-  fallbackFrom?: { provider: ProviderName; status: number }[];
+  fallbackFrom?: { provider: ProviderName; status: number; reason?: string }[];
 }
 
 export class ProviderError extends Error {
@@ -15,12 +15,25 @@ export class ProviderError extends Error {
     public provider: ProviderName,
     public status: number,
     public rateLimited: boolean,
+    /** The provider's own error message, shortened. Contains no keys or user text. */
+    public reason?: string,
   ) {
     super(`${provider} failed with status ${status}`);
   }
 }
 
 const TIMEOUT_MS = 25_000;
+
+/** Pulls the provider's error message out of a failed response, shortened. */
+async function errorReason(res: Response): Promise<string | undefined> {
+  try {
+    const body = (await res.json()) as { error?: { message?: string } | string };
+    const msg = typeof body.error === "string" ? body.error : body.error?.message;
+    return msg?.slice(0, 160);
+  } catch {
+    return undefined;
+  }
+}
 
 async function callGemini(system: string, user: string): Promise<ProviderResult> {
   const key = process.env.GEMINI_API_KEY!;
@@ -35,7 +48,7 @@ async function callGemini(system: string, user: string): Promise<ProviderResult>
       generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
     }),
   });
-  if (!res.ok) throw new ProviderError("gemini", res.status, res.status === 429);
+  if (!res.ok) throw new ProviderError("gemini", res.status, res.status === 429, await errorReason(res));
   const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
   const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
   if (!text) throw new ProviderError("gemini", 502, false);
@@ -59,7 +72,7 @@ async function callGroq(system: string, user: string): Promise<ProviderResult> {
       ],
     }),
   });
-  if (!res.ok) throw new ProviderError("groq", res.status, res.status === 429);
+  if (!res.ok) throw new ProviderError("groq", res.status, res.status === 429, await errorReason(res));
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const text = data.choices?.[0]?.message?.content ?? "";
   if (!text) throw new ProviderError("groq", 502, false);
@@ -99,7 +112,7 @@ export async function generate(system: string, user: string): Promise<ProviderRe
       return failed.length ? { ...result, fallbackFrom: failed } : result;
     } catch (e) {
       last = e instanceof ProviderError ? e : new ProviderError(name, 502, false);
-      failed.push({ provider: name, status: last.status });
+      failed.push({ provider: name, status: last.status, reason: last.reason });
       console.error(`provider ${name} failed (status ${last.status})`); // status only, never keys or text
     }
   }
