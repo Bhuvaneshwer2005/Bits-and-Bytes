@@ -1,6 +1,8 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { DeckProvider } from "./deck/DeckContext";
+import Build from "./screens/Build";
 import Home from "./screens/Home";
+import OutlineView from "./screens/OutlineView";
 import DeckOverview from "./screens/DeckOverview";
 import Placeholder from "./screens/Placeholder";
 
@@ -14,7 +16,8 @@ export default function App() {
         <div className="app">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/build" element={<Placeholder title="Building your deck" arrivesIn="v0.2.0" />} />
+            <Route path="/build" element={<Build />} />
+            <Route path="/outline/:key" element={<OutlineView />} />
             <Route path="/deck" element={<DeckOverview />} />
             <Route path="/player" element={<Placeholder title="Player" arrivesIn="v0.4.0" />} />
             <Route path="/quiz" element={<Placeholder title="Quiz" arrivesIn="v0.5.0" />} />
