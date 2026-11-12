@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "title": "Thermodynamics basics (sample)",
+    "source_file": "sample-thermodynamics-notes.pdf",
+    "file_hash": "sample",
+    "pages": 6,
+    "model": "hand-written",
+    "created": "2026-11-12",
+    "ai_generated": false,
+    "sample": true
+  },
+  "sections": [
+    {
+      "id": "s1",
+      "title": "The four laws",
+      "page_range": [1, 3],
+      "summary": "The zeroth to third laws of thermodynamics."
+    },
+    {
+      "id": "s2",
+      "title": "Entropy and heat engines",
+      "page_range": [4, 6],
+      "summary": "Entropy, heat engines and the Carnot limit."
+    }
+  ],
+  "cards": [
+    {
+      "id": "c1", "section_id": "s1", "type": "term",
+      "front": "Zeroth law of thermodynamics",
+      "back": "If two systems are each in thermal equilibrium with a third system, they are in thermal equilibrium with each other.",
+      "say_front": "What is the zeroth law of thermodynamics?",
+      "say_back": "If two systems are each in thermal equilibrium with a third system, they are in thermal equilibrium with each other.",
+      "source_page": 1, "source_quote": "each in thermal equilibrium with a third system",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c2", "section_id": "s1", "type": "term",
+      "front": "First law of thermodynamics",
+      "back": "Energy cannot be created or destroyed, only transferred or converted. Change in internal energy equals heat added minus work done by the system.",
+      "say_front": "What is the first law of thermodynamics?",
+      "say_back": "Energy cannot be created or destroyed, only transferred or converted. The change in internal energy equals the heat added minus the work done by the system.",
+      "source_page": 2, "source_quote": "Energy cannot be created or destroyed",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c3", "section_id": "s1", "type": "term",
+      "front": "Second law of thermodynamics",
+      "back": "The entropy of an isolated system never decreases.",
+      "say_front": "What is the second law of thermodynamics?",
+      "say_back": "The entropy of an isolated system never decreases.",
+      "source_page": 3, "source_quote": "The entropy of an isolated system never decreases",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c4", "section_id": "s1", "type": "term",
+      "front": "Third law of thermodynamics",
+      "back": "As temperature approaches absolute zero, the entropy of a perfect crystal approaches zero.",
+      "say_front": "What is the third law of thermodynamics?",
+      "say_back": "As temperature approaches absolute zero, the entropy of a perfect crystal approaches zero.",
+      "source_page": 3, "source_quote": "entropy of a perfect crystal approaches zero",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c5", "section_id": "s1", "type": "qa",
+      "front": "What is an isolated system?",
+      "back": "A system that exchanges neither matter nor energy with its surroundings.",
+      "say_front": "What is an isolated system?",
+      "say_back": "A system that exchanges neither matter nor energy with its surroundings.",
+      "source_page": 2, "source_quote": "exchanges neither matter nor energy",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c6", "section_id": "s1", "type": "cloze",
+      "front": "Two systems in thermal equilibrium have the same ____.",
+      "back": "temperature",
+      "say_front": "Two systems in thermal equilibrium have the same what?",
+      "say_back": "Temperature.",
+      "source_page": 1, "source_quote": "in thermal equilibrium have the same temperature",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c7", "section_id": "s2", "type": "term",
+      "front": "Entropy",
+      "back": "A measure of the disorder of a system, or the number of microscopic arrangements that match its overall state.",
+      "say_front": "What is entropy?",
+      "say_back": "A measure of the disorder of a system, or the number of microscopic arrangements that match its overall state.",
+      "source_page": 4, "source_quote": "a measure of the disorder of a system",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c8", "section_id": "s2", "type": "term",
+      "front": "Heat engine",
+      "back": "A device that turns heat into work by moving heat from a hot reservoir to a cold reservoir.",
+      "say_front": "What is a heat engine?",
+      "say_back": "A device that turns heat into work by moving heat from a hot reservoir to a cold reservoir.",
+      "source_page": 5, "source_quote": "turns heat into work",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c9", "section_id": "s2", "type": "qa",
+      "front": "Why can no heat engine be 100% efficient?",
+      "back": "Some heat must always be rejected to the cold reservoir, as required by the second law.",
+      "say_front": "Why can no heat engine be one hundred percent efficient?",
+      "say_back": "Some heat must always be rejected to the cold reservoir, as required by the second law.",
+      "source_page": 5, "source_quote": "some heat must be rejected to the cold reservoir",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c10", "section_id": "s2", "type": "term",
+      "front": "Carnot efficiency",
+      "back": "The maximum efficiency of a heat engine between two reservoirs: 1 minus the cold temperature divided by the hot temperature, with temperatures in kelvin.",
+      "say_front": "What is Carnot efficiency?",
+      "say_back": "The maximum efficiency of a heat engine between two reservoirs: one minus the cold temperature divided by the hot temperature, with temperatures in kelvin.",
+      "source_page": 6, "source_quote": "1 - Tc/Th",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c11", "section_id": "s2", "type": "qa",
+      "front": "Which temperature unit must be used in the Carnot formula?",
+      "back": "Kelvin.",
+      "say_front": "Which temperature unit must be used in the Carnot formula?",
+      "say_back": "Kelvin.",
+      "source_page": 6, "source_quote": "temperatures must be in kelvin",
+      "quote_found": true, "in_source": true, "edited_by_user": false
+    },
+    {
+      "id": "c12", "section_id": "s2", "type": "qa",
+      "front": "Do real engines reach Carnot efficiency?",
+      "back": "No. Real engines always fall short because of friction and heat losses.",
+      "say_front": "Do real engines reach Carnot efficiency?",
+      "say_back": "No. Real engines always fall short because of friction and heat losses.",
+      "source_page": 6, "source_quote": "real engines",
+      "quote_found": false, "in_source": false,
+      "check_reason": "The notes do not discuss real engines, so this answer goes beyond the page.",
+      "edited_by_user": false
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1", "card_id": "c3", "type": "mcq",
+      "prompt": "Which quantity never decreases in an isolated system?",
+      "options": ["Energy", "Entropy", "Pressure", "Volume"],
+      "answer_index": 1,
+      "explanation": "The second law says the entropy of an isolated system never decreases.",
+      "source_page": 3
+    },
+    {
+      "id": "q2", "card_id": "c5", "type": "tf",
+      "prompt": "An isolated system exchanges energy but not matter with its surroundings.",
+      "options": ["True", "False"],
+      "answer_index": 1,
+      "explanation": "An isolated system exchanges neither matter nor energy.",
+      "source_page": 2
+    },
+    {
+      "id": "q3", "card_id": "c11", "type": "mcq",
+      "prompt": "In which unit must temperatures be given for the Carnot formula?",
+      "options": ["Celsius", "Fahrenheit", "Kelvin", "Any unit works"],
+      "answer_index": 2,
+      "explanation": "The formula uses absolute temperatures, so kelvin.",
+      "source_page": 6
+    },
+    {
+      "id": "q4", "card_id": "c9", "type": "mcq",
+      "prompt": "Why can no heat engine be 100% efficient?",
+      "options": [
+        "Some heat must be rejected to the cold reservoir",
+        "Friction always destroys energy",
+        "Hot reservoirs are never hot enough",
+        "Work cannot be measured exactly"
+      ],
+      "answer_index": 0,
+      "explanation": "The second law requires some heat to be rejected to the cold reservoir.",
+      "source_page": 5
+    }
+  ],
+  "summary": {
+    "bullets_by_section": [
+      {
+        "section_id": "s1",
+        "bullets": [
+          "Zeroth law: equal temperature means thermal equilibrium.",
+          "First law: energy is conserved, only transferred or converted.",
+          "Second law: entropy of an isolated system never decreases.",
+          "Third law: entropy of a perfect crystal tends to zero at absolute zero."
+        ]
+      },
+      {
+        "section_id": "s2",
+        "bullets": [
+          "Entropy measures the disorder of a system.",
+          "A heat engine turns heat into work between a hot and a cold reservoir.",
+          "No engine is 100% efficient because some heat is always rejected.",
+          "Carnot efficiency is 1 minus Tc over Th, in kelvin."
+        ]
+      }
+    ],
+    "key_terms": [
+      { "term": "Entropy", "meaning": "A measure of the disorder of a system." },
+      { "term": "Isolated system", "meaning": "Exchanges neither matter nor energy." },
+      { "term": "Heat engine", "meaning": "Turns heat into work between two reservoirs." },
+      { "term": "Carnot efficiency", "meaning": "Maximum efficiency, 1 minus Tc over Th." }
+    ]
+  }
+}
