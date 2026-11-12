@@ -1,5 +1,5 @@
 import { AiFailure, callAI } from "./ai";
-import { applyChecks, buildCards, markUnchecked, parseChecks } from "./cards";
+import { applyChecks, buildCards, contextAround, markUnchecked, parseChecks } from "./cards";
 import type { Card, Deck, Section } from "../types/deck";
 
 /** How many sections are built at the same time. Small, to stay inside free per-minute limits. */
@@ -53,13 +53,21 @@ export async function buildSection(
   );
 
   onStage("checking");
+  // Cards whose quote isn't on the page are already flagged by code, so only the rest need the AI.
+  const toCheck = cards.filter((c) => c.quote_found);
+  if (toCheck.length === 0) return { cards: applyChecks(cards, new Map()), unchecked: false };
   try {
-    const usedPages = [...new Set(cards.map((c) => c.source_page))].sort((a, b) => a - b);
     const { value: checks } = await call(
       "P3",
       {
-        cards: cards.map((c) => ({ id: c.id, front: c.front, back: c.back, source_page: c.source_page, source_quote: c.source_quote })),
-        pages: usedPages.map((page) => ({ page, text: pageTexts.get(page) ?? "" })),
+        cards: toCheck.map((c) => ({
+          id: c.id,
+          front: c.front,
+          back: c.back,
+          source_page: c.source_page,
+          source_quote: c.source_quote,
+          context: contextAround(c.source_quote, pageTexts.get(c.source_page) ?? ""),
+        })),
       },
       parseChecks,
     );

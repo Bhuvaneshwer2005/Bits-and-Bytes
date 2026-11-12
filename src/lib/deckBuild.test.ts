@@ -40,6 +40,24 @@ describe("buildSection", () => {
     expect(result.cards.every((c) => c.in_source)).toBe(true);
   });
 
+  it("sends only cards whose quote was found, each with a context window instead of whole pages", async () => {
+    let p3Inputs: { cards: { id: string; context: string }[]; pages?: unknown } | null = null;
+    const withBadQuote = {
+      cards: [...rawCards.cards, { type: "term", front: "Q4", back: "A4", say_front: "", say_back: "", source_page: 1, source_quote: "invented sentence" }],
+    };
+    const call = (async (promptId: string, inputs: unknown, validate: (j: unknown) => unknown) => {
+      if (promptId === "P2") return { value: validate(withBadQuote), provider: "f", model: "f" };
+      p3Inputs = inputs as typeof p3Inputs;
+      const checks = ["s1c1", "s1c2", "s1c3"].map((id) => ({ card_id: id, in_source: true }));
+      return { value: validate({ checks }), provider: "f", model: "f" };
+    }) as typeof callAI;
+    const { cards } = await buildSection(section, pageTexts, () => {}, call);
+    expect(p3Inputs!.cards.map((c) => c.id)).toEqual(["s1c1", "s1c2", "s1c3"]);
+    expect(p3Inputs!.pages).toBeUndefined();
+    expect(p3Inputs!.cards[0].context).toContain("equilibrium");
+    expect(cards[3].in_source).toBe(false); // the invented quote never reaches the AI and stays flagged
+  });
+
   it("flags cards the checker rejected or skipped", async () => {
     const { cards } = await buildSection(section, pageTexts, () => {}, fakeCall("partial"));
     expect(cards.map((c) => c.in_source)).toEqual([true, false, false]);

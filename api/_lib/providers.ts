@@ -4,12 +4,21 @@ import type { PromptId } from "./prompts.js";
 
 export type ProviderName = "gemini" | "groq" | "mock";
 
+/** What a provider told us about its own rate limit (from response headers). Numbers only. */
+export interface RateInfo {
+  tokens_limit?: number;
+  tokens_remaining?: number;
+}
+
 export interface ProviderResult {
   text: string;
   provider: ProviderName;
   model: string;
   /** Providers tried before this one that failed, with their HTTP status (no keys, no user text). */
   fallbackFrom?: { provider: ProviderName; status: number; reason?: string }[];
+  /** Models of the same provider that were rate limited before this one answered. */
+  skippedModels?: string[];
+  rate?: RateInfo;
 }
 
 export class ProviderError extends Error {
@@ -21,6 +30,7 @@ export class ProviderError extends Error {
     public reason?: string,
     /** Seconds the provider asked us to wait, when it said. */
     public retryAfter?: number,
+    public rate?: RateInfo,
   ) {
     super(`${provider} failed with status ${status}`);
   }
@@ -39,14 +49,28 @@ async function errorReason(res: Response): Promise<string | undefined> {
   }
 }
 
+function numberHeader(res: Response, name: string): number | undefined {
+  const n = Number(res.headers.get(name));
+  return res.headers.get(name) !== null && Number.isFinite(n) ? n : undefined;
+}
+
+function rateInfo(res: Response): RateInfo | undefined {
+  const info: RateInfo = {
+    tokens_limit: numberHeader(res, "x-ratelimit-limit-tokens"),
+    tokens_remaining: numberHeader(res, "x-ratelimit-remaining-tokens"),
+  };
+  return info.tokens_limit === undefined && info.tokens_remaining === undefined ? undefined : info;
+}
+
 async function fail(provider: ProviderName, res: Response): Promise<never> {
-  const header = Number(res.headers.get("retry-after"));
+  const retry = numberHeader(res, "retry-after");
   throw new ProviderError(
     provider,
     res.status,
     res.status === 429,
     await errorReason(res),
-    Number.isFinite(header) && header > 0 ? Math.ceil(header) : undefined,
+    retry !== undefined && retry > 0 ? Math.ceil(retry) : undefined,
+    rateInfo(res),
   );
 }
 
@@ -70,12 +94,19 @@ async function callGemini(system: string, user: string): Promise<ProviderResult>
   return { text, provider: "gemini", model };
 }
 
-async function callGroq(system: string, user: string): Promise<ProviderResult> {
-  const key = process.env.GROQ_API_KEY!;
-  const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+/** Groq models to try in order. Each model has its own per-minute limit, so a busy one hands over to the next. */
+export function groqModels(): string[] {
+  const list = (process.env.GROQ_MODELS || process.env.GROQ_MODEL || "openai/gpt-oss-120b,openai/gpt-oss-20b")
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
+  return list.length ? list : ["openai/gpt-oss-120b"];
+}
+
+async function callGroqModel(system: string, user: string, model: string): Promise<ProviderResult> {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+    headers: { "content-type": "application/json", authorization: `Bearer ${process.env.GROQ_API_KEY}` },
     signal: AbortSignal.timeout(TIMEOUT_MS),
     body: JSON.stringify({
       model,
@@ -91,7 +122,24 @@ async function callGroq(system: string, user: string): Promise<ProviderResult> {
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const text = data.choices?.[0]?.message?.content ?? "";
   if (!text) throw new ProviderError("groq", 502, false);
-  return { text, provider: "groq", model };
+  return { text, provider: "groq", model, rate: rateInfo(res) };
+}
+
+/** Tries each Groq model in turn when one is rate limited (429) or missing (404). Other errors stop the chain. */
+async function callGroq(system: string, user: string): Promise<ProviderResult> {
+  const skipped: string[] = [];
+  let last: ProviderError | null = null;
+  for (const model of groqModels()) {
+    try {
+      const result = await callGroqModel(system, user, model);
+      return skipped.length ? { ...result, skippedModels: skipped } : result;
+    } catch (e) {
+      if (!(e instanceof ProviderError) || !(e.status === 429 || e.status === 404)) throw e;
+      last = e;
+      skipped.push(model);
+    }
+  }
+  throw last!;
 }
 
 /** Local testing only (AI_MOCK=1). Never set in production. Produces plausible JSON from the prompt's own text. */
@@ -134,8 +182,8 @@ function callMock(user: string, promptId: PromptId): ProviderResult {
         type: "term",
         front: `Mock: what comes after "${words.slice(i, i + 3).join(" ")}"?`,
         back: words.slice(i + 3, i + 10).join(" "),
-        say_front: `Mock question about ${words.slice(i, i + 3).join(" ")}`,
-        say_back: words.slice(i + 3, i + 10).join(" "),
+        say_front: "",
+        say_back: "",
         source_page: p.page,
         source_quote: words.slice(i, i + 8).join(" "),
       });
@@ -153,17 +201,36 @@ export function configuredProviders(): ProviderName[] {
   return list;
 }
 
+/**
+ * A provider that answers 401/403 will keep doing so (bad key, no free tier), so skip it for a while
+ * instead of paying a failed round trip on every call. Per server instance; resets on a cold start.
+ */
+const DISABLE_MS = 10 * 60_000;
+const disabledUntil = new Map<ProviderName, number>();
+
+export function isDisabled(name: ProviderName, now = Date.now()): boolean {
+  return (disabledUntil.get(name) ?? 0) > now;
+}
+
+export function noteFailure(name: ProviderName, status: number, now = Date.now()): void {
+  if (status === 401 || status === 403) disabledUntil.set(name, now + DISABLE_MS);
+}
+
 /** Tries each configured provider in order; throws the last error if all fail. */
 export async function generate(system: string, user: string, promptId: PromptId): Promise<ProviderResult> {
   let last: ProviderError | null = null;
   const failed: NonNullable<ProviderResult["fallbackFrom"]> = [];
-  for (const name of configuredProviders()) {
+  const names = configuredProviders();
+  // never skip the only provider we have, even if it failed before
+  const usable = names.filter((n) => !isDisabled(n));
+  for (const name of usable.length ? usable : names) {
     try {
       const result =
         name === "mock" ? callMock(user, promptId) : name === "gemini" ? await callGemini(system, user) : await callGroq(system, user);
       return failed.length ? { ...result, fallbackFrom: failed } : result;
     } catch (e) {
       last = e instanceof ProviderError ? e : new ProviderError(name, 502, false);
+      noteFailure(name, last.status);
       failed.push({ provider: name, status: last.status, reason: last.reason });
       console.error(`provider ${name} failed (status ${last.status})`); // status only, never keys or text
     }

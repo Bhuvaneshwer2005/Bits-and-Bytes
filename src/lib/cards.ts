@@ -9,8 +9,9 @@ const rawCard = z.object({
   type: z.enum(["term", "qa", "cloze"]),
   front: z.string().min(1),
   back: z.string().min(1),
-  say_front: z.string().min(1),
-  say_back: z.string().min(1),
+  // the model leaves these empty when the text can be read aloud as it is
+  say_front: z.string().default(""),
+  say_back: z.string().default(""),
   source_page: z.number().int(),
   source_quote: z.string().min(1),
 });
@@ -29,6 +30,32 @@ export function normalizeForMatch(text: string): string {
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
+}
+
+/** What a voice should read for a written card side: blanks become the word "blank". */
+export function spokenFallback(text: string): string {
+  return text.replace(/_{2,}/g, "blank").replace(/\s+/g, " ").trim();
+}
+
+/** The quote plus `radius` characters either side, cut from the page. Falls back to the start of the page. */
+export function contextAround(quote: string, pageText: string, radius = 300): string {
+  const words = quote
+    .split(/\.{3}|…/)[0]
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (words.length > 0) {
+    try {
+      const match = new RegExp(words.join("[^\\p{L}\\p{N}]+"), "iu").exec(pageText);
+      if (match) {
+        const start = Math.max(0, match.index - radius);
+        return pageText.slice(start, Math.min(pageText.length, match.index + match[0].length + radius)).trim();
+      }
+    } catch {
+      // fall through to the page start
+    }
+  }
+  return pageText.slice(0, radius * 2).trim();
 }
 
 /** True when the quote appears in the page text. A quote with "..." must have every part present. */
@@ -62,8 +89,8 @@ export function buildCards(input: unknown, section: Section, pageTexts: Map<numb
       type: c.type,
       front: c.front.trim(),
       back: c.back.trim(),
-      say_front: c.say_front.trim(),
-      say_back: c.say_back.trim(),
+      say_front: c.say_front.trim() || spokenFallback(c.front),
+      say_back: c.say_back.trim() || spokenFallback(c.back),
       source_page: c.source_page,
       source_quote: c.source_quote.trim(),
       quote_found: found,

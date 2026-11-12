@@ -19,8 +19,8 @@ export interface P2Inputs {
 }
 
 export interface P3Inputs {
-  cards: { id: string; front: string; back: string; source_page: number; source_quote: string }[];
-  pages: Page[];
+  /** `context` is the quote plus a little text around it, taken from the page by the client. */
+  cards: { id: string; front: string; back: string; source_page: number; source_quote: string; context: string }[];
 }
 
 export type PromptInputs = { id: "P1"; inputs: P1Inputs } | { id: "P2"; inputs: P2Inputs } | { id: "P3"; inputs: P3Inputs };
@@ -103,8 +103,7 @@ export function cleanInputs(id: PromptId, raw: unknown): PromptInputs | null {
     return { id, inputs: { section: { id: sid, title }, pages, count: count as number } };
   }
 
-  const pages = cleanPages(r.pages, FULL_CHARS_PER_PAGE, FULL_TOTAL_CHARS);
-  if (!pages || !Array.isArray(r.cards) || r.cards.length === 0 || r.cards.length > MAX_CARDS_IN_P3) return null;
+  if (!Array.isArray(r.cards) || r.cards.length === 0 || r.cards.length > MAX_CARDS_IN_P3) return null;
   const cards: P3Inputs["cards"] = [];
   for (const c of r.cards) {
     if (!c || typeof c !== "object") return null;
@@ -113,10 +112,11 @@ export function cleanInputs(id: PromptId, raw: unknown): PromptInputs | null {
     const front = shortText(o.front, 400);
     const back = shortText(o.back, 600);
     const quote = shortText(o.source_quote, 400);
-    if (!cid || front === null || back === null || quote === null || !Number.isInteger(o.source_page)) return null;
-    cards.push({ id: cid, front, back, source_page: o.source_page as number, source_quote: quote });
+    const context = shortText(o.context, 1_200);
+    if (!cid || front === null || back === null || quote === null || context === null || !Number.isInteger(o.source_page)) return null;
+    cards.push({ id: cid, front, back, source_page: o.source_page as number, source_quote: quote, context });
   }
-  return { id: "P3", inputs: { cards, pages } };
+  return { id: "P3", inputs: { cards } };
 }
 
 const pageBlock = (pages: Page[]) => pages.map((p) => `[page ${p.page}] ${p.text}`).join("\n");
@@ -160,17 +160,17 @@ Output: {"sections":[{"id":"s1","title":"","summary":"","page_range":[${first},$
 
 For section ${section.id} (${section.title}), using only the text of ${range}, write about ${count} flashcards.
 Types: term (word -> meaning), qa (question -> answer), cloze (sentence with one blank written as ____).
-Each card tests ONE idea. Keep fronts under 15 words and backs under 35. Also write say_front and
-say_back: the same content as natural spoken English (spell out symbols, formulas and abbreviations
-so a voice can read them; for cloze, say_front asks the question and say_back gives the answer).
-Add source_page (the page the idea is on) and a short exact source_quote (under 25 words) copied
-character for character from that page.
+Each card tests ONE idea. Keep fronts under 15 words and backs under 35. say_front and say_back are
+what a voice reads aloud: fill them ONLY where speech needs different wording than the text (symbols,
+formulas, abbreviations, numbers like 1 - Tc/Th, or a cloze blank); otherwise leave them as empty
+strings. Add source_page (the page the idea is on) and a short exact source_quote (under 25 words)
+copied character for character from that page.
 Output: {"cards":[{"type":"term","front":"","back":"","say_front":"","say_back":"","source_page":${pages[0].page},"source_quote":""}]}`;
       return { system, user: pageBlock(pages) };
     }
 
     case "P3": {
-      const { cards, pages } = p.inputs;
+      const { cards } = p.inputs;
       const system = `${routeContext({
         n: 3,
         name: "Grounding check",
@@ -181,13 +181,12 @@ Output: {"cards":[{"type":"term","front":"","back":"","say_front":"","say_back":
         nextNeeds: "in_source on every card, because quiz questions are built only from supported cards and the app flags the rest",
       })}
 
-For each card, decide whether its back is fully supported by its source_quote and the page text.
+For each card, decide whether its back is fully supported by its source_quote and the surrounding context from the page.
 Mark in_source true or false. If false, give a one-line reason (max 20 words). Do not rewrite cards.
 Be strict: a claim that goes beyond the quote, adds an example the page does not contain, or changes
 a number is false. Return exactly one result per card id.
 Output: {"checks":[{"card_id":"","in_source":true,"reason":""}]}`;
-      const user = `CARDS:\n${JSON.stringify(cards)}\n\nPAGES:\n${pageBlock(pages)}`;
-      return { system, user };
+      return { system, user: `CARDS:\n${JSON.stringify(cards)}` };
     }
   }
 }

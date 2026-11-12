@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyChecks, buildCards, CardsError, markUnchecked, normalizeForMatch, parseChecks, quoteInPage } from "./cards";
+import { applyChecks, buildCards, CardsError, contextAround, markUnchecked, normalizeForMatch, parseChecks, quoteInPage, spokenFallback } from "./cards";
 import type { Section } from "../types/deck";
 
 const section: Section = { id: "s1", title: "Laws", summary: "", page_range: [1, 2] };
@@ -108,5 +108,45 @@ describe("grounding check", () => {
   it("rejects a malformed checker response", () => {
     expect(() => parseChecks({ nope: 1 })).toThrow(CardsError);
     expect(() => parseChecks({ checks: [{ card_id: "x" }] })).toThrow(CardsError);
+  });
+});
+
+describe("spoken text", () => {
+  it("fills empty spoken text from the written text and turns blanks into the word blank", () => {
+    const cards = buildCards(
+      { cards: [raw({ say_front: "", say_back: "", front: "Energy cannot be ____ or destroyed.", back: "created" }), raw(), raw()] },
+      section,
+      pageTexts,
+    );
+    expect(cards[0].say_front).toBe("Energy cannot be blank or destroyed.");
+    expect(cards[0].say_back).toBe("created");
+  });
+  it("keeps spoken text the model did give", () => {
+    const cards = buildCards({ cards: [raw({ say_back: "one minus Tc over Th" }), raw(), raw()] }, section, pageTexts);
+    expect(cards[0].say_back).toBe("one minus Tc over Th");
+  });
+  it("spokenFallback tidies spacing", () => {
+    expect(spokenFallback("A  ____   B")).toBe("A blank B");
+  });
+});
+
+describe("contextAround", () => {
+  const page = "Intro text here. ".repeat(30) + "The entropy of an isolated system never decreases. " + "Outro text there. ".repeat(30);
+  it("returns the quote with surrounding text, not the whole page", () => {
+    const ctx = contextAround("entropy of an isolated system never decreases", page, 100);
+    expect(ctx).toContain("The entropy of an isolated system never decreases.");
+    expect(ctx.length).toBeLessThan(page.length / 2);
+    expect(ctx.length).toBeGreaterThan(80);
+  });
+  it("matches across different spacing and punctuation", () => {
+    expect(contextAround("entropy of an isolated,  system", "The entropy of an isolated system never decreases.", 50)).toContain("isolated system never");
+  });
+  it("falls back to the start of the page when the quote is missing", () => {
+    const out = contextAround("not present anywhere", "Start of the page. " + "More text. ".repeat(50), 20);
+    expect(out.startsWith("Start of the page.")).toBe(true);
+    expect(out.length).toBeLessThanOrEqual(40);
+  });
+  it("copes with regex characters in the quote", () => {
+    expect(() => contextAround("cost (approx.) [1] + 2*3?", "cost (approx.) [1] + 2*3? yes", 10)).not.toThrow();
   });
 });

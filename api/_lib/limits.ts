@@ -2,7 +2,7 @@
 // net against runaway loops, not a hard guarantee. The providers' own limits are the real ceiling.
 
 const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 15;
+const MAX_PER_WINDOW = 60;
 const hits = new Map<string, number[]>();
 
 export function allow(ip: string, now = Date.now()): boolean {
