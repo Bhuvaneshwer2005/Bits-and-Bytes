@@ -431,3 +431,79 @@ p {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+.quiz-prompt {
+  font-size: var(--text-lg);
+  line-height: 1.35;
+}
+
+.opt {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1.5px solid var(--color-ink);
+  border-radius: var(--radius-md);
+  font: inherit;
+  cursor: pointer;
+}
+
+.opt[aria-disabled="true"] {
+  cursor: default;
+}
+
+.opt-key {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.opt-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Feedback never relies on colour alone: the badge text and a thicker border say it too. */
+.opt--right {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-width: 3px;
+}
+
+.opt--wrong {
+  background: var(--color-warn-bg);
+  color: var(--color-warn);
+  border-color: var(--color-warn);
+  border-style: dashed;
+  border-width: 3px;
+}
+
+.opt-badge {
+  flex-basis: 100%;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  padding-left: 38px;
+}
+
+.feedback strong {
+  font-size: var(--text-lg);
+}
+
+.score {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+}

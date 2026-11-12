@@ -209,10 +209,10 @@ function PlayerScreen({ deck }: { deck: Deck }) {
           {state.again.length > 0 ? `, and marked ${state.again.length} for another look.` : "."}
         </p>
         <div className="stack">
-          <button type="button" className="btn" aria-disabled="true" onClick={(e) => e.preventDefault()}>
-            Take the quiz · coming soon
+          <button type="button" className="btn btn--primary" onClick={() => navigate("/quiz")}>
+            Take the quiz
           </button>
-          <button type="button" className="btn btn--primary" onClick={() => setState((s) => P.restart(s, deck.cards))}>
+          <button type="button" className="btn" onClick={() => setState((s) => P.restart(s, deck.cards))}>
             Study again
           </button>
           <button type="button" className="btn" onClick={() => navigate("/deck")}>

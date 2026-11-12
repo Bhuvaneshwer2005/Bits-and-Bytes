@@ -2,7 +2,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useDeck } from "../deck/DeckContext";
 
 export default function DeckOverview() {
-  const { deck, build, retrySection } = useDeck();
+  const { deck, build, retrySection, quizStatus, prepareQuiz } = useDeck();
   const navigate = useNavigate();
 
   if (!deck) {
@@ -31,6 +31,10 @@ export default function DeckOverview() {
   const readyCount = build ? build.sections.filter((s) => s.status === "ready").length : total;
   const stillBuilding = build?.running ?? false;
   const failed = build?.sections.filter((s) => s.status === "failed") ?? [];
+  const quizPending = Object.values(quizStatus).includes("pending");
+  const quizFailed = Object.entries(quizStatus)
+    .filter(([, status]) => status === "failed")
+    .map(([id]) => id);
 
   return (
     <main id="main" className="screen">
@@ -107,9 +111,36 @@ export default function DeckOverview() {
         </section>
       )}
 
+      {quizPending && (
+        <p className="muted" role="status">
+          Preparing quiz questions…
+        </p>
+      )}
+      {!quizPending && quizFailed.length > 0 && (
+        <div className="stack">
+          <p className="notice" role="status">
+            Quiz questions couldn't be built for {quizFailed.length} {quizFailed.length === 1 ? "section" : "sections"}.
+          </p>
+          <button type="button" className="btn" onClick={() => prepareQuiz(quizFailed)}>
+            Try the quiz questions again
+          </button>
+        </div>
+      )}
+      {!quizPending && quizFailed.length === 0 && deck.quiz.length === 0 && !deck.meta.sample && !stillBuilding && (
+        <div className="stack">
+          <p className="muted">This deck has no quiz questions yet.</p>
+          <button type="button" className="btn" onClick={() => prepareQuiz()}>
+            Prepare quiz
+          </button>
+        </div>
+      )}
+
       <div className="stack">
         <button type="button" className="btn btn--primary" onClick={() => navigate("/player")}>
           Start listening
+        </button>
+        <button type="button" className="btn" onClick={() => navigate("/quiz")}>
+          Take the quiz{deck.quiz.length > 0 ? ` (${deck.quiz.length} questions)` : ""}
         </button>
         <button type="button" className="btn" aria-disabled="true" onClick={(e) => e.preventDefault()}>
           Cheat sheet (PDF) · coming soon

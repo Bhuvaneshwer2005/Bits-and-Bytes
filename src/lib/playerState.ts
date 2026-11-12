@@ -85,3 +85,16 @@ export function repeatCount(s: PlayerState): number {
   const id = currentId(s);
   return id === null ? 0 : s.queue.slice(0, s.index).filter((x) => x === id).length;
 }
+
+/** A short run through only the cards the learner got wrong. What was viewed stays viewed. */
+export function reviewState(previous: PlayerState | null, cards: Card[], cardIds: string[]): PlayerState {
+  const all = new Set(cards.map((c) => c.id));
+  const queue = cardIds.filter((id) => all.has(id));
+  return {
+    queue,
+    index: 0,
+    viewed: previous?.viewed ?? [],
+    again: queue,
+    known: cards.map((c) => c.id),
+  };
+}

@@ -183,6 +183,20 @@ async function callGroq(system: string, user: string): Promise<ProviderResult> {
 function callMock(user: string, promptId: PromptId): ProviderResult {
   const done = (value: unknown): ProviderResult => ({ text: JSON.stringify(value), provider: "mock", model: "mock" });
 
+  if (promptId === "P4") {
+    const cards = JSON.parse(user.slice(user.indexOf("[")).trim()) as { id: string; back: string }[];
+    return done({
+      quiz: cards.slice(0, 4).map((c, i) => ({
+        card_id: c.id,
+        type: "mcq",
+        prompt: `Mock question ${i + 1}: which statement matches the notes?`,
+        options: [c.back, "Mock wrong answer A", "Mock wrong answer B", "Mock wrong answer C"],
+        answer_index: 0,
+        explanation: "Mock explanation for local testing.",
+      })),
+    });
+  }
+
   if (promptId === "P3") {
     const ids = [...user.matchAll(/"id":"([^"]+)"/g)].map((m) => m[1]);
     return done({

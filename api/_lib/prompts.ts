@@ -1,7 +1,7 @@
 // Runtime prompts. Source of truth: Part E of docs/route-and-prompt-sheet.md.
 // The server builds the prompt from an allow-listed id so nobody can use /api/ai as a free general chatbot.
 
-export type PromptId = "P1" | "P2" | "P3";
+export type PromptId = "P1" | "P2" | "P3" | "P4";
 
 export interface Page {
   page: number;
@@ -23,7 +23,18 @@ export interface P3Inputs {
   cards: { id: string; front: string; back: string; source_page: number; source_quote: string; context: string }[];
 }
 
-export type PromptInputs = { id: "P1"; inputs: P1Inputs } | { id: "P2"; inputs: P2Inputs } | { id: "P3"; inputs: P3Inputs };
+export interface P4Inputs {
+  section: { id: string; title: string };
+  /** Only cards the grounding check passed. */
+  cards: { id: string; front: string; back: string; source_page: number }[];
+  count: number;
+}
+
+export type PromptInputs =
+  | { id: "P1"; inputs: P1Inputs }
+  | { id: "P2"; inputs: P2Inputs }
+  | { id: "P3"; inputs: P3Inputs }
+  | { id: "P4"; inputs: P4Inputs };
 
 export interface BuiltPrompt {
   system: string;
@@ -41,6 +52,7 @@ const P1_TOTAL_CHARS = 40_000;
 const FULL_CHARS_PER_PAGE = 4_000;
 const FULL_TOTAL_CHARS = 24_000;
 const MAX_CARDS_IN_P3 = 16;
+const MAX_CARDS_IN_P4 = 14;
 
 function routeContext(opts: {
   n: number;
@@ -101,6 +113,26 @@ export function cleanInputs(id: PromptId, raw: unknown): PromptInputs | null {
     const count = r.count;
     if (!pages || !sid || !title || !Number.isInteger(count) || (count as number) < 3 || (count as number) > 12) return null;
     return { id, inputs: { section: { id: sid, title }, pages, count: count as number } };
+  }
+
+  if (id === "P4") {
+    const section = r.section as { id?: unknown; title?: unknown } | undefined;
+    const sid = shortText(section?.id, 20);
+    const title = shortText(section?.title, 100);
+    const count = r.count;
+    if (!sid || !title || !Number.isInteger(count) || (count as number) < 2 || (count as number) > 8) return null;
+    if (!Array.isArray(r.cards) || r.cards.length < 2 || r.cards.length > MAX_CARDS_IN_P4) return null;
+    const quizCards: P4Inputs["cards"] = [];
+    for (const c of r.cards) {
+      if (!c || typeof c !== "object") return null;
+      const o = c as Record<string, unknown>;
+      const cid = shortText(o.id, 30);
+      const front = shortText(o.front, 400);
+      const back = shortText(o.back, 600);
+      if (!cid || !front || !back || !Number.isInteger(o.source_page)) return null;
+      quizCards.push({ id: cid, front, back, source_page: o.source_page as number });
+    }
+    return { id: "P4", inputs: { section: { id: sid, title }, cards: quizCards, count: count as number } };
   }
 
   if (!Array.isArray(r.cards) || r.cards.length === 0 || r.cards.length > MAX_CARDS_IN_P3) return null;
@@ -188,9 +220,33 @@ a number is false. Return exactly one result per card id.
 Output: {"checks":[{"card_id":"","in_source":true,"reason":""}]}`;
       return { system, user: `CARDS:\n${JSON.stringify(cards)}` };
     }
+
+    case "P4": {
+      const { section, cards, count } = p.inputs;
+      const system = `${routeContext({
+        n: 4,
+        name: "Quiz",
+        prevName: "Grounding check",
+        prevSummary: "kept only the flashcards that the PDF supports",
+        goal: "write quiz questions for one section from those cards",
+        nextName: "Quiz screen",
+        nextNeeds: "exactly one correct answer index per question, because the app grades locally and shuffles the options itself",
+      })}
+
+For section ${section.id} (${section.title}), using ONLY the cards supplied, write ${count} questions, each tied to
+one card_id. Mix these types:
+- mcq: exactly 4 options. Wrong options must be plausible misconceptions from the same section, never silly.
+- tf: options are exactly ["True","False"]; the prompt is a statement that is clearly true or false.
+- cloze: a sentence with one blank written as ____, and 4 options.
+Never use "all of the above" or "none of the above". Add a one-sentence explanation (max 25 words).
+answer_index is the position of the correct option. Do not always put the correct answer first or in the
+same place; the app shuffles options afterwards.
+Output: {"quiz":[{"card_id":"","type":"mcq","prompt":"","options":["","","",""],"answer_index":0,"explanation":""}]}`;
+      return { system, user: `CARDS:\n${JSON.stringify(cards)}` };
+    }
   }
 }
 
 export function isPromptId(x: unknown): x is PromptId {
-  return x === "P1" || x === "P2" || x === "P3";
+  return x === "P1" || x === "P2" || x === "P3" || x === "P4";
 }

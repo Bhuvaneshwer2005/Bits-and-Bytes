@@ -6,6 +6,8 @@ import OutlineView from "./screens/OutlineView";
 import Player from "./screens/Player";
 import DeckOverview from "./screens/DeckOverview";
 import Placeholder from "./screens/Placeholder";
+import Quiz from "./screens/Quiz";
+import Results from "./screens/Results";
 
 export default function App() {
   return (
@@ -21,8 +23,8 @@ export default function App() {
             <Route path="/outline/:key" element={<OutlineView />} />
             <Route path="/deck" element={<DeckOverview />} />
             <Route path="/player" element={<Player />} />
-            <Route path="/quiz" element={<Placeholder title="Quiz" arrivesIn="v0.5.0" />} />
-            <Route path="/results" element={<Placeholder title="Results" arrivesIn="v0.6.0" />} />
+            <Route path="/quiz" element={<Quiz />} />
+            <Route path="/results" element={<Results />} />
             <Route path="*" element={<Placeholder title="Page not found" arrivesIn="never, check the address" />} />
           </Routes>
         </div>

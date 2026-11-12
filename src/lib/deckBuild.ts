@@ -1,6 +1,7 @@
 import { AiFailure, callAI } from "./ai";
 import { applyChecks, buildCards, contextAround, markUnchecked, parseChecks } from "./cards";
-import type { Card, Deck, Section } from "../types/deck";
+import { buildQuiz } from "./quiz";
+import type { Card, Deck, Question, Section } from "../types/deck";
 
 /** How many sections are built at the same time. Small, to stay inside free per-minute limits. */
 export const SECTION_CONCURRENCY = 2;
@@ -78,6 +79,40 @@ export async function buildSection(
   }
 }
 
+/** About one question for every two cards, between 3 and 6, and never more than the cards available. */
+export function quizTarget(cardCount: number): number {
+  return Math.min(cardCount, Math.min(6, Math.max(3, Math.ceil(cardCount / 2))));
+}
+
+/**
+ * P4 for one section, from the cards the grounding check passed. Returns no questions (without calling the AI)
+ * when fewer than two cards qualify. Throws if the AI call or its answer is unusable.
+ */
+export async function buildSectionQuiz(section: Section, cards: Card[], call: CallAI = callAI): Promise<Question[]> {
+  const usable = cards.filter((c) => c.in_source);
+  if (usable.length < 2) return [];
+  const { value } = await call(
+    "P4",
+    {
+      section: { id: section.id, title: section.title },
+      cards: usable.map((c) => ({ id: c.id, front: c.front, back: c.back, source_page: c.source_page })),
+      count: quizTarget(usable.length),
+    },
+    (json) => buildQuiz(json, usable, section.id),
+  );
+  return value;
+}
+
+/** Replaces one section's questions in a deck and keeps the questions in section order. */
+export function withSectionQuiz(deck: Deck, sectionId: string, questions: Question[]): Deck {
+  const sectionCards = new Set(deck.cards.filter((c) => c.section_id === sectionId).map((c) => c.id));
+  const cardSection = new Map(deck.cards.map((c) => [c.id, c.section_id]));
+  const order = new Map(deck.sections.map((s, i) => [s.id, i]));
+  const rank = (q: Question) => order.get(cardSection.get(q.card_id) ?? "") ?? 99;
+  const quiz = [...deck.quiz.filter((q) => !sectionCards.has(q.card_id)), ...questions].sort((a, b) => rank(a) - rank(b));
+  return { ...deck, quiz };
+}
+
 /** Runs `worker` over `items` with at most `limit` running at once. Workers must handle their own errors. */
 export async function pool<T>(items: T[], limit: number, worker: (item: T) => Promise<void>): Promise<void> {
   let next = 0;
@@ -91,7 +126,7 @@ export async function pool<T>(items: T[], limit: number, worker: (item: T) => Pr
 }
 
 /** Builds the deck from whichever sections are ready, in section order. Quiz and summary come in later steps. */
-export function assembleDeck(input: BuildInput, cardsBySection: Map<string, Card[]>): Deck {
+export function assembleDeck(input: BuildInput, cardsBySection: Map<string, Card[]>, quizBySection: Map<string, Question[]> = new Map()): Deck {
   const readySections = input.sections.filter((s) => cardsBySection.has(s.id));
   return {
     meta: {
@@ -105,7 +140,7 @@ export function assembleDeck(input: BuildInput, cardsBySection: Map<string, Card
     },
     sections: readySections,
     cards: readySections.flatMap((s) => cardsBySection.get(s.id) ?? []),
-    quiz: [],
+    quiz: readySections.flatMap((s) => quizBySection.get(s.id) ?? []),
     summary: { bullets_by_section: [], key_terms: [] },
   };
 }

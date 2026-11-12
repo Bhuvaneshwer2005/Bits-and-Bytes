@@ -60,6 +60,38 @@ describe("cleanInputs P2 and P3", () => {
   });
 });
 
+describe("P4 (quiz)", () => {
+  const section = { id: "s1", title: "Laws" };
+  const cards = [
+    { id: "s1c1", front: "Second law", back: "Entropy never decreases.", source_page: 2 },
+    { id: "s1c2", front: "Third law", back: "Entropy of a perfect crystal approaches zero.", source_page: 3 },
+  ];
+
+  it("accepts a valid request", () => {
+    expect(cleanInputs("P4", { section, cards, count: 3 })).not.toBeNull();
+  });
+
+  it("rejects too few cards, a bad count, a missing section or malformed cards", () => {
+    expect(cleanInputs("P4", { section, cards: [cards[0]], count: 3 })).toBeNull();
+    expect(cleanInputs("P4", { section, cards, count: 1 })).toBeNull();
+    expect(cleanInputs("P4", { section, cards, count: 20 })).toBeNull();
+    expect(cleanInputs("P4", { cards, count: 3 })).toBeNull();
+    expect(cleanInputs("P4", { section, cards: [cards[0], { ...cards[1], source_page: "3" }], count: 3 })).toBeNull();
+    expect(cleanInputs("P4", { section, cards: Array.from({ length: 15 }, () => cards[0]), count: 3 })).toBeNull();
+  });
+
+  it("builds a prompt that names the section, forbids 'all of the above' and asks for one correct index", () => {
+    const { system, user } = buildPrompt(cleanInputs("P4", { section, cards, count: 3 })!);
+    expect(system).toContain("Step 4 of 6: Quiz");
+    expect(system).toContain("section s1 (Laws)");
+    expect(system).toContain("write 3 questions");
+    expect(system).toContain("all of the above");
+    expect(system).toContain("answer_index");
+    expect(system).toContain("untrusted data");
+    expect(user).toContain('"id":"s1c1"');
+  });
+});
+
 describe("buildPrompt", () => {
   it("P1 names the page span, tells the model the PDF text is untrusted, and lists the pages", () => {
     const { system, user } = buildPrompt(cleanInputs("P1", { pages: [{ page: 4, text: "alpha" }, { page: 5, text: "beta" }] })!);

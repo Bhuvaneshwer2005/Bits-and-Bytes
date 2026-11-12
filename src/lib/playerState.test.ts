@@ -74,6 +74,23 @@ describe("queue", () => {
   });
 });
 
+describe("reviewState", () => {
+  it("queues only the missed cards, keeps what was viewed, and marks them for another look", () => {
+    const prev = { ...P.initialState(cards("a", "b", "c")), viewed: ["a", "b", "c"], index: 3 };
+    const s = P.reviewState(prev, cards("a", "b", "c"), ["c", "a"]);
+    expect(s.queue).toEqual(["c", "a"]);
+    expect(s.index).toBe(0);
+    expect(s.viewed).toEqual(["a", "b", "c"]);
+    expect(s.again).toEqual(["c", "a"]);
+  });
+
+  it("ignores cards that no longer exist and works with no saved state", () => {
+    const s = P.reviewState(null, cards("a"), ["a", "gone"]);
+    expect(s.queue).toEqual(["a"]);
+    expect(s.viewed).toEqual([]);
+  });
+});
+
 describe("syncWithCards", () => {
   it("adds cards that arrive later to the end of the queue", () => {
     const s = P.next(P.initialState(cards("a", "b")));

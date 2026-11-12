@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AiFailure, callAI } from "./ai";
-import { assembleDeck, buildSection, cardTarget, pool, titleFromFileName, type BuildInput } from "./deckBuild";
-import type { Card, Section } from "../types/deck";
+import { assembleDeck, buildSection, buildSectionQuiz, cardTarget, pool, quizTarget, titleFromFileName, withSectionQuiz, type BuildInput } from "./deckBuild";
+import type { Card, Deck, Question, Section } from "../types/deck";
 
 const section: Section = { id: "s1", title: "Laws", summary: "", page_range: [1, 2] };
 const pageTexts = new Map([
@@ -113,5 +113,71 @@ describe("helpers", () => {
     expect(deck.sections.map((s) => s.id)).toEqual(["s2"]);
     expect(deck.cards).toEqual([card]);
     expect(deck.meta.ai_generated).toBe(true);
+  });
+});
+
+describe("quiz building", () => {
+  const supported = (id: string, ok = true) => ({ id, section_id: "s1", front: `Q ${id}`, back: `A ${id}`, source_page: 1, in_source: ok }) as Card;
+  const goodQuiz = (ids: string[]) => ({
+    quiz: ids.map((id, i) => ({
+      card_id: id,
+      type: "mcq",
+      prompt: `Question ${i}?`,
+      options: ["A", "B", "C", "D"],
+      answer_index: i % 4,
+      explanation: "Because.",
+    })),
+  });
+
+  it("scales the question count with the cards, between 3 and 6 and never above the card count", () => {
+    expect(quizTarget(2)).toBe(2);
+    expect(quizTarget(4)).toBe(3);
+    expect(quizTarget(8)).toBe(4);
+    expect(quizTarget(12)).toBe(6);
+  });
+
+  it("asks the AI only about supported cards and returns validated questions", async () => {
+    let sent: { cards: { id: string }[]; count: number } | null = null;
+    const call = (async (_id: string, inputs: unknown, validate: (j: unknown) => unknown) => {
+      sent = inputs as typeof sent;
+      return { value: validate(goodQuiz(["c1", "c2"])), provider: "f", model: "f" };
+    }) as unknown as typeof callAI;
+    const qs = await buildSectionQuiz(section, [supported("c1"), supported("c2"), supported("c3", false)], call);
+    expect(sent!.cards.map((c) => c.id)).toEqual(["c1", "c2"]);
+    expect(qs.map((q) => q.id)).toEqual(["s1q1", "s1q2"]);
+  });
+
+  it("does not call the AI when fewer than two cards are supported", async () => {
+    let called = false;
+    const call = (async () => {
+      called = true;
+    }) as unknown as typeof callAI;
+    expect(await buildSectionQuiz(section, [supported("c1"), supported("c2", false)], call)).toEqual([]);
+    expect(called).toBe(false);
+  });
+
+  it("throws when the AI fails, so the caller can mark the quiz as failed", async () => {
+    const call = (async () => {
+      throw new AiFailure("unavailable");
+    }) as unknown as typeof callAI;
+    await expect(buildSectionQuiz(section, [supported("c1"), supported("c2")], call)).rejects.toBeInstanceOf(AiFailure);
+  });
+
+  it("replaces one section's questions and keeps section order", () => {
+    const sections: Section[] = [section, { id: "s2", title: "More", summary: "", page_range: [3, 3] }];
+    const cards = [supported("c1"), { ...supported("c2"), section_id: "s2" } as Card];
+    const q = (id: string, cardId: string) => ({ id, card_id: cardId }) as Question;
+    const deck = { sections, cards, quiz: [q("s2q1", "c2"), q("s1q1", "c1")] } as unknown as Deck;
+    const out = withSectionQuiz(deck, "s1", [q("s1q1", "c1"), q("s1q2", "c1")]);
+    expect(out.quiz.map((x) => x.id)).toEqual(["s1q1", "s1q2", "s2q1"]);
+    const cleared = withSectionQuiz(deck, "s2", []);
+    expect(cleared.quiz.map((x) => x.id)).toEqual(["s1q1"]);
+  });
+
+  it("assembles the quiz of the ready sections into the deck", () => {
+    const input: BuildInput = { fileName: "n.pdf", hash: "h", from: 1, to: 2, totalPages: 2, model: "m", sections: [section], pageTexts };
+    const q = { id: "s1q1" } as Question;
+    const deck = assembleDeck(input, new Map([["s1", [supported("c1")]]]), new Map([["s1", [q]]]));
+    expect(deck.quiz).toEqual([q]);
   });
 });
