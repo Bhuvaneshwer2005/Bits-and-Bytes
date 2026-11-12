@@ -12,6 +12,11 @@ export interface BuiltPrompt {
   user: string;
 }
 
+/** Fewest sections to ask for. Short ranges don't need three. Keep in sync with src/lib/outline.ts. */
+export function minSections(pageCount: number): number {
+  return pageCount <= 3 ? 1 : pageCount <= 6 ? 2 : 3;
+}
+
 const MAX_PAGES = 60;
 const MAX_CHARS_PER_PAGE = 600;
 const MAX_TOTAL_CHARS = 40_000;
@@ -63,7 +68,7 @@ export function buildPrompt(id: PromptId, inputs: PromptInputs): BuiltPrompt {
     case "P1": {
       const first = inputs.pages[0].page;
       const last = inputs.pages[inputs.pages.length - 1].page;
-      const min = Math.min(3, inputs.pages.length);
+      const min = minSections(inputs.pages.length);
       const system = `${routeContext({
         n: 1,
         name: "Outline",

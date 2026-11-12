@@ -6,6 +6,8 @@ export interface ProviderResult {
   text: string;
   provider: ProviderName;
   model: string;
+  /** Providers tried before this one that failed, with their HTTP status (no keys, no text). */
+  fallbackFrom?: { provider: ProviderName; status: number }[];
 }
 
 export class ProviderError extends Error {
@@ -90,12 +92,14 @@ export function configuredProviders(): ProviderName[] {
 /** Tries each configured provider in order; throws the last error if all fail. */
 export async function generate(system: string, user: string): Promise<ProviderResult> {
   let last: ProviderError | null = null;
+  const failed: NonNullable<ProviderResult["fallbackFrom"]> = [];
   for (const name of configuredProviders()) {
     try {
-      if (name === "mock") return callMock(user);
-      return name === "gemini" ? await callGemini(system, user) : await callGroq(system, user);
+      const result = name === "mock" ? callMock(user) : name === "gemini" ? await callGemini(system, user) : await callGroq(system, user);
+      return failed.length ? { ...result, fallbackFrom: failed } : result;
     } catch (e) {
       last = e instanceof ProviderError ? e : new ProviderError(name, 502, false);
+      failed.push({ provider: name, status: last.status });
       console.error(`provider ${name} failed (status ${last.status})`); // status only, never keys or text
     }
   }

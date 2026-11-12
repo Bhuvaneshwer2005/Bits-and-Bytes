@@ -16,6 +16,11 @@ const rawSchema = z.object({
 
 export class OutlineError extends Error {}
 
+/** Fewest sections accepted. Short ranges don't need three. Keep in sync with api/_lib/prompts.ts. */
+export function minSections(pageCount: number): number {
+  return pageCount <= 3 ? 1 : pageCount <= 6 ? 2 : 3;
+}
+
 /**
  * Validates the model's outline for pages [from, to] and repairs small boundary slips
  * (gaps, overlaps, a wrong first or last page) so the sections cover every page exactly once.
@@ -26,9 +31,8 @@ export function normalizeOutline(input: unknown, from: number, to: number): Sect
   if (!parsed.success) throw new OutlineError("outline does not match the schema");
 
   const pageCount = to - from + 1;
-  const minSections = Math.min(3, pageCount);
   const items = [...parsed.data.sections].sort((a, b) => a.page_range[0] - b.page_range[0]);
-  if (items.length < minSections) throw new OutlineError("too few sections");
+  if (items.length < minSections(pageCount)) throw new OutlineError("too few sections");
   if (items.length > pageCount) throw new OutlineError("more sections than pages");
 
   // Snap each section to start right after the previous one ends.

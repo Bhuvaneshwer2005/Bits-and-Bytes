@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { normalizeOutline, OutlineError } from "./outline";
+import { minSections, normalizeOutline, OutlineError } from "./outline";
+import { minSections as serverMin } from "../../api/_lib/prompts";
 
 const sec = (title: string, from: number, to: number) => ({ title, summary: "s", page_range: [from, to] });
 
@@ -31,6 +32,14 @@ describe("normalizeOutline", () => {
   it("allows fewer than three sections for a very short range", () => {
     const out = normalizeOutline({ sections: [sec("A", 1, 1), sec("B", 2, 2)] }, 1, 2);
     expect(out).toHaveLength(2);
+  });
+
+  it("accepts a single section for a three-page range", () => {
+    expect(normalizeOutline({ sections: [sec("A", 1, 3)] }, 1, 3)).toHaveLength(1);
+  });
+
+  it("keeps the client and server minimums in sync", () => {
+    for (let n = 1; n <= 60; n++) expect(minSections(n)).toBe(serverMin(n));
   });
 
   it("rejects too few sections for a long range", () => {
