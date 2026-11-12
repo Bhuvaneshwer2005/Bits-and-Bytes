@@ -24,7 +24,7 @@ export default function EditLogPanel() {
   }
 
   return (
-    <section className="stack" aria-labelledby="edits-heading">
+    <section className="panel stack" aria-labelledby="edits-heading">
       <h2 id="edits-heading">Your edits ({edits.length})</h2>
       <p className="muted">Changes you made to cards, kept on this device. Copy them as text for the hand-edit log.</p>
       <div className="stack">

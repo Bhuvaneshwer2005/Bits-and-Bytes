@@ -39,7 +39,7 @@ export default function DeckOverview() {
     .map(([id]) => id);
 
   return (
-    <main id="main" className="screen">
+    <main id="main" className="screen screen--wide">
       <header className="topbar">
         <Link to="/" className="btn">
           Home
@@ -54,102 +54,109 @@ export default function DeckOverview() {
         </p>
       </div>
 
-      {deck.meta.ai_generated && (
-        <p className="notice">AI-generated: check cards against your notes. The source page is shown on every card.</p>
-      )}
-
-      {stillBuilding && (
-        <p className="notice" role="status">
-          Still building: {readyCount} of {total} sections ready. New cards appear here as they finish.
-        </p>
-      )}
-
-      {flagged.length > 0 && (
-        <p className="notice" role="status">
-          {flagged.length} {flagged.length === 1 ? "card needs" : "cards need"} checking against your notes
-        </p>
-      )}
-
-      <ul className="list" aria-label="Sections">
-        {deck.sections.map((s) => {
-          const cards = deck.cards.filter((c) => c.section_id === s.id);
-          const flaggedHere = cards.filter((c) => !c.in_source).length;
-          return (
-            <li key={s.id} className="list-item">
-              <span>
-                {s.id.replace("s", "")} · {s.title} ({cards.length})
-              </span>
-              {flaggedHere > 0 && <span className="muted">{flaggedHere} to check</span>}
-            </li>
-          );
-        })}
-        {failed.map((s) => (
-          <li key={s.id} className="list-item">
-            <span>
-              {s.title}
-              <span className="muted"> · {s.error}</span>
-            </span>
-            <button type="button" className="btn" onClick={() => retrySection(s.id)}>
-              Try again
+      <div className="split">
+        <div className="split-side">
+          <section className="panel stack" aria-label="Study this deck">
+            <h2 className="panel-title">Study</h2>
+            <button type="button" className="btn btn--primary" onClick={() => navigate("/player")}>
+              Start listening
             </button>
-          </li>
-        ))}
-      </ul>
+            <button type="button" className="btn" onClick={() => navigate("/quiz")}>
+              Take the quiz{deck.quiz.length > 0 ? ` (${deck.quiz.length} questions)` : ""}
+            </button>
+            <CheatSheetButton />
+          </section>
+        </div>
 
-      {flagged.length > 0 && (
-        <section className="stack" aria-labelledby="check-heading">
-          <h2 id="check-heading">Cards to check</h2>
-          <ul className="list">
-            {flagged.map((c) => (
-              <li key={c.id} className="card-box stack">
-                <strong>{c.front}</strong>
-                <span>{c.back}</span>
-                <span className="muted">
-                  Page {c.source_page} · {c.check_reason ?? "Could not be confirmed from the page."}
+        <div className="split-main">
+          {deck.meta.ai_generated && (
+            <p className="notice">AI-generated: check cards against your notes. The source page is shown on every card.</p>
+          )}
+
+          {stillBuilding && (
+            <p className="notice" role="status">
+              Still building: {readyCount} of {total} sections ready. New cards appear here as they finish.
+            </p>
+          )}
+
+          {flagged.length > 0 && (
+            <p className="notice" role="status">
+              {flagged.length} {flagged.length === 1 ? "card needs" : "cards need"} checking against your notes
+            </p>
+          )}
+
+          <ul className="list" aria-label="Sections">
+            {deck.sections.map((s) => {
+              const cards = deck.cards.filter((c) => c.section_id === s.id);
+              const flaggedHere = cards.filter((c) => !c.in_source).length;
+              return (
+                <li key={s.id} className="list-item">
+                  <span>
+                    {s.id.replace("s", "")} · {s.title} ({cards.length})
+                  </span>
+                  {flaggedHere > 0 && <span className="muted">{flaggedHere} to check</span>}
+                </li>
+              );
+            })}
+            {failed.map((s) => (
+              <li key={s.id} className="list-item">
+                <span>
+                  {s.title}
+                  <span className="muted"> · {s.error}</span>
                 </span>
-                <Link to={`/edit/${c.id}`} className="btn">
-                  Edit this card
-                </Link>
+                <button type="button" className="btn" onClick={() => retrySection(s.id)}>
+                  Try again
+                </button>
               </li>
             ))}
           </ul>
-        </section>
-      )}
 
-      <EditLogPanel />
+          {flagged.length > 0 && (
+            <section className="stack" aria-labelledby="check-heading">
+              <h2 id="check-heading">Cards to check</h2>
+              <ul className="list">
+                {flagged.map((c) => (
+                  <li key={c.id} className="card-box stack">
+                    <strong>{c.front}</strong>
+                    <span>{c.back}</span>
+                    <span className="muted">
+                      Page {c.source_page} · {c.check_reason ?? "Could not be confirmed from the page."}
+                    </span>
+                    <Link to={`/edit/${c.id}`} className="btn">
+                      Edit this card
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-      {quizPending && (
-        <p className="muted" role="status">
-          Preparing quiz questions…
-        </p>
-      )}
-      {!quizPending && quizFailed.length > 0 && (
-        <div className="stack">
-          <p className="notice" role="status">
-            Quiz questions couldn't be built for {quizFailed.length} {quizFailed.length === 1 ? "section" : "sections"}.
-          </p>
-          <button type="button" className="btn" onClick={() => prepareQuiz(quizFailed)}>
-            Try the quiz questions again
-          </button>
+          <EditLogPanel />
+
+          {quizPending && (
+            <p className="muted" role="status">
+              Preparing quiz questions…
+            </p>
+          )}
+          {!quizPending && quizFailed.length > 0 && (
+            <div className="stack">
+              <p className="notice" role="status">
+                Quiz questions couldn't be built for {quizFailed.length} {quizFailed.length === 1 ? "section" : "sections"}.
+              </p>
+              <button type="button" className="btn" onClick={() => prepareQuiz(quizFailed)}>
+                Try the quiz questions again
+              </button>
+            </div>
+          )}
+          {!quizPending && quizFailed.length === 0 && deck.quiz.length === 0 && !deck.meta.sample && !stillBuilding && (
+            <div className="stack">
+              <p className="muted">This deck has no quiz questions yet.</p>
+              <button type="button" className="btn" onClick={() => prepareQuiz()}>
+                Prepare quiz
+              </button>
+            </div>
+          )}
         </div>
-      )}
-      {!quizPending && quizFailed.length === 0 && deck.quiz.length === 0 && !deck.meta.sample && !stillBuilding && (
-        <div className="stack">
-          <p className="muted">This deck has no quiz questions yet.</p>
-          <button type="button" className="btn" onClick={() => prepareQuiz()}>
-            Prepare quiz
-          </button>
-        </div>
-      )}
-
-      <div className="stack">
-        <button type="button" className="btn btn--primary" onClick={() => navigate("/player")}>
-          Start listening
-        </button>
-        <button type="button" className="btn" onClick={() => navigate("/quiz")}>
-          Take the quiz{deck.quiz.length > 0 ? ` (${deck.quiz.length} questions)` : ""}
-        </button>
-        <CheatSheetButton />
       </div>
     </main>
   );

@@ -1,22 +1,29 @@
-/* Design tokens. Every colour, size and radius in the app comes from here. */
+/* Design tokens. Every colour, size and radius in the app comes from here. Neutral greys and one blue accent. */
 :root {
-  --color-bg: #f4f1ea;
-  --color-surface: #fffdf8;
-  --color-surface-2: #ebe6d8;
-  --color-ink: #1d1b16;
-  --color-muted: #5f5a4e;
-  --color-line: #cfc8b8;
-  --color-accent: #2f6f6a;
+  --color-bg: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-2: #e9ecf0;
+  --color-ink: #111827;
+  --color-muted: #4b5563;
+  --color-line: #d5d9e0;
+  --color-control: #7a8291;
+  --color-accent: #1d4ed8;
+  --color-accent-strong: #1e3fae;
   --color-on-accent: #ffffff;
-  --color-warn: #8f4515;
-  --color-warn-bg: #f8e6d6;
-  --color-focus: #1a4fd6;
+  --color-warn: #9a3412;
+  --color-warn-line: #c2410c;
+  --color-focus: #1d4ed8;
+  --color-caption-bg: #111827;
+  --color-caption-ink: #ffffff;
+  --heat-1-mix: 35%;
+  --heat-2-mix: 60%;
 
-  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
-  --text-lg: 1.25rem;
-  --text-xl: 1.625rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
   --leading: 1.5;
 
   --space-1: 4px;
@@ -26,40 +33,53 @@
   --space-5: 24px;
   --space-6: 32px;
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-pill: 999px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 
   --tap-min: 44px;
-  --content-max: 560px;
+  --content-narrow: 680px;
+  --content-wide: 1120px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-bg: #151411;
-    --color-surface: #1f1d19;
-    --color-surface-2: #2a2822;
-    --color-ink: #f1ede2;
-    --color-muted: #b0aa9a;
-    --color-line: #4a463c;
-    --color-accent: #6fc2ba;
-    --color-on-accent: #0e1a19;
-    --color-warn: #f0a36a;
-    --color-warn-bg: #3a2a1c;
-    --color-focus: #8fb0ff;
+    --color-bg: #0d1117;
+    --color-surface: #151b23;
+    --color-surface-2: #212a35;
+    --color-ink: #e6eaf0;
+    --color-muted: #9aa5b4;
+    --color-line: #2c3541;
+    --color-control: #6f7c8c;
+    --color-accent: #6b9bff;
+    --color-accent-strong: #8db1ff;
+    --color-on-accent: #0a1020;
+    --color-warn: #f0a070;
+    --color-warn-line: #e0803f;
+    --color-focus: #8db1ff;
+    --color-caption-bg: #000000;
+    --color-caption-ink: #ffffff;
+    --heat-1-mix: 30%;
+    --heat-2-mix: 46%;
   }
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #151411;
-  --color-surface: #1f1d19;
-  --color-surface-2: #2a2822;
-  --color-ink: #f1ede2;
-  --color-muted: #b0aa9a;
-  --color-line: #4a463c;
-  --color-accent: #6fc2ba;
-  --color-on-accent: #0e1a19;
-  --color-warn: #f0a36a;
-  --color-warn-bg: #3a2a1c;
-  --color-focus: #8fb0ff;
+  --color-bg: #0d1117;
+  --color-surface: #151b23;
+  --color-surface-2: #212a35;
+  --color-ink: #e6eaf0;
+  --color-muted: #9aa5b4;
+  --color-line: #2c3541;
+  --color-control: #6f7c8c;
+  --color-accent: #6b9bff;
+  --color-accent-strong: #8db1ff;
+  --color-on-accent: #0a1020;
+  --color-warn: #f0a070;
+  --color-warn-line: #e0803f;
+  --color-focus: #8db1ff;
+  --color-caption-bg: #000000;
+  --color-caption-ink: #ffffff;
+  --heat-1-mix: 30%;
+  --heat-2-mix: 46%;
 }
